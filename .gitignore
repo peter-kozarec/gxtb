@@ -1,0 +1,26 @@
+# Go binary files
+/bin/
+/build/
+
+# Go test binary, often created when running `go test`
+*.test
+
+# Dependency directories
+/vendor/
+
+# Go workspace files
+go.work
+go.work.sum
+
+# IDE and editor files (add any IDE/editor-specific files you use)
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS-specific files
+.DS_Store  # macOS
+Thumbs.db  # Windows
+
+# Coverage reports
+coverage.out
