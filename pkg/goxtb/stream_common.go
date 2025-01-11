@@ -190,29 +190,30 @@ func (_ TickRecord) Type() RecordType {
 }
 
 type TradeRecord struct {
-	ClosePrice    float32 `json:"close_price"`
-	CloseTime     int64   `json:"close_time"`
-	Closed        bool    `json:"closed"`
-	Cmd           int     `json:"cmd"`
-	Comment       string  `json:"comment"`
-	Commission    float32 `json:"commission"`
-	CustomComment string  `json:"customComment"`
-	Digits        int     `json:"digits"`
-	Expiration    int64   `json:"expiration"`
-	MarginRate    float32 `json:"margin_rate"`
-	Offset        int     `json:"offset"`
-	OpenPrice     float32 `json:"open_price"`
-	OpenTime      int64   `json:"open_time"`
-	Order         int     `json:"order"`
-	Order2        int     `json:"order2"`
-	Position      int     `json:"position"`
-	Profit        float32 `json:"profit"`
-	StopLoss      float32 `json:"sl"`
-	State         string  `json:"state"`
-	Storage       float32 `json:"storage"`
-	TakeProfit    float32 `json:"tp"`
-	TradeType     int     `json:"type"`
-	Volume        float32 `json:"volume"`
+	ClosePrice    float32  `json:"close_price"`
+	CloseTime     *int64   `json:"close_time"`
+	Closed        bool     `json:"closed"`
+	Cmd           int      `json:"cmd"`
+	Comment       string   `json:"comment"`
+	Commission    float32  `json:"commission"`
+	CustomComment string   `json:"customComment"`
+	Digits        int      `json:"digits"`
+	Expiration    *int64   `json:"expiration"`
+	MarginRate    float32  `json:"margin_rate"`
+	Offset        int      `json:"offset"`
+	OpenPrice     float32  `json:"open_price"`
+	OpenTime      int64    `json:"open_time"`
+	Order         int      `json:"order"`
+	Order2        int      `json:"order2"`
+	Position      int      `json:"position"`
+	Profit        *float32 `json:"profit"`
+	StopLoss      float32  `json:"sl"`
+	State         string   `json:"state"`
+	Storage       float32  `json:"storage"`
+	Symbol        string   `json:"symbol"`
+	TakeProfit    float32  `json:"tp"`
+	TradeType     int      `json:"type"`
+	Volume        float32  `json:"volume"`
 }
 
 func (_ TradeRecord) Type() RecordType {
@@ -221,7 +222,7 @@ func (_ TradeRecord) Type() RecordType {
 
 type TradeStatusRecord struct {
 	CustomComment string  `json:"customComment"`
-	Message       string  `json:"message"`
+	Message       *string `json:"message"`
 	Order         int     `json:"order"`
 	Price         float32 `json:"price"`
 	RequestStatus int     `json:"requestStatus"`
