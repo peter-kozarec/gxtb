@@ -5,21 +5,21 @@ import (
 	"fmt"
 )
 
-type RecordType string
+type StreamRecordType string
 
 const (
-	StreamBalanceRecordType     RecordType = "BalanceRecord"
-	StreamCandleRecordType      RecordType = "CandleRecord"
-	StreamKeepAliveRecordType   RecordType = "KeepAliveRecord"
-	StreamNewsRecordType        RecordType = "NewsRecord"
-	StreamProfitRecordType      RecordType = "ProfitRecord"
-	StreamTickRecordType        RecordType = "TickRecord"
-	StreamTradeRecordType       RecordType = "TradeRecord"
-	StreamTradeStatusRecordType RecordType = "TradeStatusRecord"
+	StreamBalanceRecordType     StreamRecordType = "BalanceRecord"
+	StreamCandleRecordType      StreamRecordType = "CandleRecord"
+	StreamKeepAliveRecordType   StreamRecordType = "KeepAliveRecord"
+	StreamNewsRecordType        StreamRecordType = "NewsRecord"
+	StreamProfitRecordType      StreamRecordType = "ProfitRecord"
+	StreamTickRecordType        StreamRecordType = "TickRecord"
+	StreamTradeRecordType       StreamRecordType = "TradeRecord"
+	StreamTradeStatusRecordType StreamRecordType = "TradeStatusRecord"
 )
 
 type StreamRecord interface {
-	Type() RecordType
+	Type() StreamRecordType
 }
 
 func UnmarshalStreamRecord(message []byte) (StreamRecord, error) {
@@ -59,49 +59,49 @@ func UnmarshalStreamRecord(message []byte) (StreamRecord, error) {
 func unmarshalRecordByCommand(command string, data []byte) (StreamRecord, error) {
 	switch command {
 	case "balance":
-		var record BalanceRecord
+		var record StreamBalanceRecord
 		if err := json.Unmarshal(data, &record); err != nil {
 			return nil, fmt.Errorf("unable to unmarshal balance record: %v", err)
 		}
 		return record, nil
 	case "candle":
-		var record CandleRecord
+		var record StreamCandleRecord
 		if err := json.Unmarshal(data, &record); err != nil {
 			return nil, fmt.Errorf("unable to unmarshal candle record: %v", err)
 		}
 		return record, nil
 	case "keepAlive":
-		var record KeepAliveRecord
+		var record StreamKeepAliveRecord
 		if err := json.Unmarshal(data, &record); err != nil {
 			return nil, fmt.Errorf("unable to unmarshal keep alive record: %v", err)
 		}
 		return record, nil
 	case "news":
-		var record NewsRecord
+		var record StreamNewsRecord
 		if err := json.Unmarshal(data, &record); err != nil {
 			return nil, fmt.Errorf("unable to unmarshal news record: %v", err)
 		}
 		return record, nil
 	case "profit":
-		var record ProfitRecord
+		var record StreamProfitRecord
 		if err := json.Unmarshal(data, &record); err != nil {
 			return nil, fmt.Errorf("unable to unmarshal profit record: %v", err)
 		}
 		return record, nil
 	case "tickPrices":
-		var record TickRecord
+		var record StreamTickRecord
 		if err := json.Unmarshal(data, &record); err != nil {
 			return nil, fmt.Errorf("unable to unmarshal tick record: %v", err)
 		}
 		return record, nil
 	case "trade":
-		var record TradeRecord
+		var record StreamTradeRecord
 		if err := json.Unmarshal(data, &record); err != nil {
 			return nil, fmt.Errorf("unable to unmarshal trade record: %v", err)
 		}
 		return record, nil
 	case "tradeStatus":
-		var record TradeStatusRecord
+		var record StreamTradeStatusRecord
 		if err := json.Unmarshal(data, &record); err != nil {
 			return nil, fmt.Errorf("unable to unmarshal trade status record: %v", err)
 		}
@@ -111,7 +111,7 @@ func unmarshalRecordByCommand(command string, data []byte) (StreamRecord, error)
 	}
 }
 
-type BalanceRecord struct {
+type StreamBalanceRecord struct {
 	Balance     float32 `json:"balance"`
 	Credit      float32 `json:"credit"`
 	Equity      float32 `json:"equity"`
@@ -120,11 +120,11 @@ type BalanceRecord struct {
 	MarginLevel float32 `json:"marginLevel"`
 }
 
-func (_ BalanceRecord) Type() RecordType {
+func (_ StreamBalanceRecord) Type() StreamRecordType {
 	return StreamBalanceRecordType
 }
 
-type CandleRecord struct {
+type StreamCandleRecord struct {
 	Close     float32 `json:"close"`
 	Ctm       int64   `json:"ctm"`
 	CtmString string  `json:"ctmString"`
@@ -136,41 +136,41 @@ type CandleRecord struct {
 	Volume    float32 `json:"vol"`
 }
 
-func (_ CandleRecord) Type() RecordType {
+func (_ StreamCandleRecord) Type() StreamRecordType {
 	return StreamCandleRecordType
 }
 
-type KeepAliveRecord struct {
+type StreamKeepAliveRecord struct {
 	Timestamp int64 `json:"timestamp"`
 }
 
-func (_ KeepAliveRecord) Type() RecordType {
+func (_ StreamKeepAliveRecord) Type() StreamRecordType {
 	return StreamKeepAliveRecordType
 }
 
-type NewsRecord struct {
+type StreamNewsRecord struct {
 	Body  string `json:"body"`
 	Key   string `json:"key"`
 	Time  int64  `json:"time"`
 	Title string `json:"title"`
 }
 
-func (_ NewsRecord) Type() RecordType {
+func (_ StreamNewsRecord) Type() StreamRecordType {
 	return StreamNewsRecordType
 }
 
-type ProfitRecord struct {
+type StreamProfitRecord struct {
 	Order    int     `json:"order"`
 	Order2   int     `json:"order2"`
 	Position int     `json:"position"`
 	Profit   float32 `json:"profit"`
 }
 
-func (_ ProfitRecord) Type() RecordType {
+func (_ StreamProfitRecord) Type() StreamRecordType {
 	return StreamProfitRecordType
 }
 
-type TickRecord struct {
+type StreamTickRecord struct {
 	Ask         float32 `json:"ask"`
 	AskVolume   int     `json:"askVolume"`
 	Bid         float32 `json:"bid"`
@@ -185,11 +185,11 @@ type TickRecord struct {
 	Timestamp   int64   `json:"timestamp"`
 }
 
-func (_ TickRecord) Type() RecordType {
+func (_ StreamTickRecord) Type() StreamRecordType {
 	return StreamTickRecordType
 }
 
-type TradeRecord struct {
+type StreamTradeRecord struct {
 	ClosePrice    float32  `json:"close_price"`
 	CloseTime     *int64   `json:"close_time"`
 	Closed        bool     `json:"closed"`
@@ -216,11 +216,11 @@ type TradeRecord struct {
 	Volume        float32  `json:"volume"`
 }
 
-func (_ TradeRecord) Type() RecordType {
+func (_ StreamTradeRecord) Type() StreamRecordType {
 	return StreamTradeRecordType
 }
 
-type TradeStatusRecord struct {
+type StreamTradeStatusRecord struct {
 	CustomComment string  `json:"customComment"`
 	Message       *string `json:"message"`
 	Order         int     `json:"order"`
@@ -228,6 +228,6 @@ type TradeStatusRecord struct {
 	RequestStatus int     `json:"requestStatus"`
 }
 
-func (_ TradeStatusRecord) Type() RecordType {
+func (_ StreamTradeStatusRecord) Type() StreamRecordType {
 	return StreamTradeStatusRecordType
 }

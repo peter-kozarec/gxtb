@@ -95,7 +95,7 @@ func Test_unmarshalRecordByCommand(t *testing.T) {
 		inputData    string
 		outputRecord StreamRecord
 	}{
-		{"UnmarshalBalanceRecord", "balance", balanceRecord, BalanceRecord{
+		{"UnmarshalBalanceRecord", "balance", balanceRecord, StreamBalanceRecord{
 			Balance:     995800269.43,
 			Credit:      1000.00,
 			Equity:      995985397.56,
@@ -103,7 +103,7 @@ func Test_unmarshalRecordByCommand(t *testing.T) {
 			MarginFree:  995227635.00,
 			MarginLevel: 173930.41,
 		}},
-		{"UnamrshalCandleRecord", "candle", candleRecord, CandleRecord{
+		{"UnamrshalCandleRecord", "candle", candleRecord, StreamCandleRecord{
 			Close:     4.1849,
 			Ctm:       1378369375000,
 			CtmString: "Sep 05, 2013 10:22:55 AM",
@@ -114,22 +114,22 @@ func Test_unmarshalRecordByCommand(t *testing.T) {
 			Symbol:    "EURUSD",
 			Volume:    0.0,
 		}},
-		{"UnmarshalKeepAliveRecord", "keepAlive", keepAliveRecord, KeepAliveRecord{
+		{"UnmarshalKeepAliveRecord", "keepAlive", keepAliveRecord, StreamKeepAliveRecord{
 			Timestamp: 1362944112000,
 		}},
-		{"UnmarshalNewsRecord", "news", newsRecord, NewsRecord{
+		{"UnmarshalNewsRecord", "news", newsRecord, StreamNewsRecord{
 			Body:  "<html>...</html>",
 			Key:   "1f6da766abd29927aa854823f0105c23",
 			Time:  1262944112000,
 			Title: "Breaking trend",
 		}},
-		{"UnmarshalProfitRecord", "profit", profitRecord, ProfitRecord{
+		{"UnmarshalProfitRecord", "profit", profitRecord, StreamProfitRecord{
 			Order:    7497776,
 			Order2:   7497777,
 			Position: 7497776,
 			Profit:   7076.52,
 		}},
-		{"UnmarshalTickRecord", "tickPrices", tickRecord, TickRecord{
+		{"UnmarshalTickRecord", "tickPrices", tickRecord, StreamTickRecord{
 			Ask:         4000.0,
 			AskVolume:   15000,
 			Bid:         4000.0,
@@ -143,7 +143,7 @@ func Test_unmarshalRecordByCommand(t *testing.T) {
 			Symbol:      "KOMB.CZ",
 			Timestamp:   1272529161605,
 		}},
-		{"UnmarshalTradeRecord", "trade", tradeRecord, TradeRecord{
+		{"UnmarshalTradeRecord", "trade", tradeRecord, StreamTradeRecord{
 			ClosePrice:    1.3256,
 			CloseTime:     nil,
 			Closed:        false,
@@ -169,7 +169,7 @@ func Test_unmarshalRecordByCommand(t *testing.T) {
 			TradeType:  0,
 			Volume:     0.10,
 		}},
-		{"UnmarshalTradeStatusRecord", "tradeStatus", tradeStatusRecord, TradeStatusRecord{
+		{"UnmarshalTradeStatusRecord", "tradeStatus", tradeStatusRecord, StreamTradeStatusRecord{
 			CustomComment: "Some text",
 			Message:       nil,
 			Order:         43,
