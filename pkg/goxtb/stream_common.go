@@ -24,66 +24,74 @@ type StreamRecord interface {
 
 func UnmarshalStreamRecord(message []byte) (StreamRecord, error) {
 
-	var raw map[string]string
+	var raw map[string]interface{}
 
 	if err := json.Unmarshal(message, &raw); err != nil {
 		return nil, fmt.Errorf("unable to unmarshal message: %v", err)
 	}
 
-	messageData := []byte(raw["data"])
-
-	switch raw["command"] {
-	case "balance":
-		var balanceRecord BalanceRecord
-		if err := json.Unmarshal(messageData, &balanceRecord); err != nil {
-			return nil, fmt.Errorf("unable to unmarshal balance record: %v", err)
-		}
-		return balanceRecord, nil
-	case "candle":
-		var candleRecord CandleRecord
-		if err := json.Unmarshal(messageData, &candleRecord); err != nil {
-			return nil, fmt.Errorf("unable to unmarshal candle record: %v", err)
-		}
-		return candleRecord, nil
-	case "keepAlive":
-		var keepAliveRecord KeepAliveRecord
-		if err := json.Unmarshal(messageData, &keepAliveRecord); err != nil {
-			return nil, fmt.Errorf("unable to unmarshal keep alive record: %v", err)
-		}
-		return keepAliveRecord, nil
-	case "news":
-		var newsRecord NewsRecord
-		if err := json.Unmarshal(messageData, &newsRecord); err != nil {
-			return nil, fmt.Errorf("unable to unmarshal news record: %v", err)
-		}
-		return newsRecord, nil
-	case "profit":
-		var profitRecord ProfitRecord
-		if err := json.Unmarshal(messageData, &profitRecord); err != nil {
-			return nil, fmt.Errorf("unable to unmarshal profit record: %v", err)
-		}
-		return profitRecord, nil
-	case "tickPrices":
-		var tickRecord TickRecord
-		if err := json.Unmarshal(messageData, &tickRecord); err != nil {
-			return nil, fmt.Errorf("unable to unmarshal tick record: %v", err)
-		}
-		return tickRecord, nil
-	case "trade":
-		var tradeRecord TradeRecord
-		if err := json.Unmarshal(messageData, &tradeRecord); err != nil {
-			return nil, fmt.Errorf("unable to unmarshal trade record: %v", err)
-		}
-		return tradeRecord, nil
-	case "tradeStatus":
-		var tradeStatusRecord TradeStatusRecord
-		if err := json.Unmarshal(messageData, &tradeStatusRecord); err != nil {
-			return nil, fmt.Errorf("unable to unmarshal trade status record: %v", err)
-		}
-		return tradeStatusRecord, nil
-	default:
-		return nil, fmt.Errorf("unknown command: %s", raw["data"])
+	var messageData []byte
+	if dataStr, ok := raw["data"].(string); ok {
+		messageData = []byte(dataStr)
+	} else {
+		return nil, fmt.Errorf("stream record does not contain data field")
 	}
+
+	if command, ok := raw["command"].(string); ok {
+		switch command {
+		case "balance":
+			var balanceRecord BalanceRecord
+			if err := json.Unmarshal(messageData, &balanceRecord); err != nil {
+				return nil, fmt.Errorf("unable to unmarshal balance record: %v", err)
+			}
+			return balanceRecord, nil
+		case "candle":
+			var candleRecord CandleRecord
+			if err := json.Unmarshal(messageData, &candleRecord); err != nil {
+				return nil, fmt.Errorf("unable to unmarshal candle record: %v", err)
+			}
+			return candleRecord, nil
+		case "keepAlive":
+			var keepAliveRecord KeepAliveRecord
+			if err := json.Unmarshal(messageData, &keepAliveRecord); err != nil {
+				return nil, fmt.Errorf("unable to unmarshal keep alive record: %v", err)
+			}
+			return keepAliveRecord, nil
+		case "news":
+			var newsRecord NewsRecord
+			if err := json.Unmarshal(messageData, &newsRecord); err != nil {
+				return nil, fmt.Errorf("unable to unmarshal news record: %v", err)
+			}
+			return newsRecord, nil
+		case "profit":
+			var profitRecord ProfitRecord
+			if err := json.Unmarshal(messageData, &profitRecord); err != nil {
+				return nil, fmt.Errorf("unable to unmarshal profit record: %v", err)
+			}
+			return profitRecord, nil
+		case "tickPrices":
+			var tickRecord TickRecord
+			if err := json.Unmarshal(messageData, &tickRecord); err != nil {
+				return nil, fmt.Errorf("unable to unmarshal tick record: %v", err)
+			}
+			return tickRecord, nil
+		case "trade":
+			var tradeRecord TradeRecord
+			if err := json.Unmarshal(messageData, &tradeRecord); err != nil {
+				return nil, fmt.Errorf("unable to unmarshal trade record: %v", err)
+			}
+			return tradeRecord, nil
+		case "tradeStatus":
+			var tradeStatusRecord TradeStatusRecord
+			if err := json.Unmarshal(messageData, &tradeStatusRecord); err != nil {
+				return nil, fmt.Errorf("unable to unmarshal trade status record: %v", err)
+			}
+			return tradeStatusRecord, nil
+		default:
+			return nil, fmt.Errorf("unknown command: %s", raw["data"])
+		}
+	}
+	return nil, fmt.Errorf("stream record does not contain command field")
 }
 
 type BalanceRecord struct {
