@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sync"
 
 	"github.com/gorilla/websocket"
 )
@@ -23,9 +22,8 @@ type streamRecord struct {
 }
 
 type StreamClient struct {
-	conn  *websocket.Conn
-	url   string
-	mutex sync.Mutex
+	conn *websocket.Conn
+	url  string
 
 	GetBalanceChan     chan BalanceRecord
 	GetCandlesChan     chan CandleRecord
@@ -395,9 +393,6 @@ func (c *StreamClient) Listen(ctx context.Context) error {
 }
 
 func (c *StreamClient) write(data []byte) error {
-
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
 
 	if err := c.conn.WriteMessage(websocket.TextMessage, data); err != nil {
 		return fmt.Errorf("failed to write: %w", err)
