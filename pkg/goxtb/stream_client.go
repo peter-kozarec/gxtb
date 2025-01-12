@@ -9,9 +9,22 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type streamCommand struct {
+	Command         string `json:"command"`
+	StreamSessionId string `json:"streamSessionId,omitempty"`
+	Symbol          string `json:"symbol,omitempty"`
+	MinArrivalTime  int    `json:"minArrivalTime,omitempty"`
+	MaxLevel        int    `json:"maxLevel,omitempty"`
+}
+
+type streamRecord struct {
+	Command string          `json:"command"`
+	Data    json.RawMessage `json:"data"`
+}
+
 type StreamClient struct {
-	wsConn             *websocket.Conn
-	wsUrl              string
+	conn               *websocket.Conn
+	url                string
 	getBalanceChan     chan BalanceRecord
 	getCandlesChan     chan CandleRecord
 	getKeepAliveChan   chan KeepAliveRecord
@@ -27,8 +40,8 @@ type StreamClient struct {
 
 func NewStreamClient() *StreamClient {
 	return &StreamClient{
-		wsConn:             nil,
-		wsUrl:              "wss://wss.xtb.com:5113/realStream",
+		conn:               nil,
+		url:                "wss://ws.xtb.com/realStream",
 		getBalanceChan:     make(chan BalanceRecord),
 		getCandlesChan:     make(chan CandleRecord),
 		getKeepAliveChan:   make(chan KeepAliveRecord),
@@ -42,8 +55,8 @@ func NewStreamClient() *StreamClient {
 
 func NewStreamDemoClient() *StreamClient {
 	return &StreamClient{
-		wsConn:             nil,
-		wsUrl:              "wss://wss.xtb.com:5125/demoStream",
+		conn:               nil,
+		url:                "wss://ws.xtb.com/demoStream",
 		getBalanceChan:     make(chan BalanceRecord),
 		getCandlesChan:     make(chan CandleRecord),
 		getKeepAliveChan:   make(chan KeepAliveRecord),
@@ -55,339 +68,284 @@ func NewStreamDemoClient() *StreamClient {
 	}
 }
 
-func (streamClient *StreamClient) Connect() error {
+func (c *StreamClient) Connect() error {
 	var err error
-	streamClient.wsConn, _, err = websocket.DefaultDialer.Dial(streamClient.wsUrl, nil)
+	c.conn, _, err = websocket.DefaultDialer.Dial(c.url, nil)
 	if err != nil {
-		return fmt.Errorf("failed to connect: %w", err)
+		return fmt.Errorf("websocket failed to connect: %w", err)
 	}
 	return nil
 }
 
-func (streamClient *StreamClient) Close() {
-	streamClient.wsConn.Close()
+func (c *StreamClient) Disconnect() {
+	c.conn.Close()
 }
 
-func (streamClient *StreamClient) SubGetBalance() (chan BalanceRecord, error) {
-	msg := struct {
-		Command   string `json:"command"`
-		SessionId string `json:"streamSessionId"`
-	}{Command: "getBalance", SessionId: streamClient.StreamSessionId}
+func (c *StreamClient) GetBalance() (chan BalanceRecord, error) {
 
-	data, err := json.Marshal(msg)
+	cmd := streamCommand{
+		Command:         "getBalance",
+		StreamSessionId: c.StreamSessionId,
+	}
+
+	data, err := json.Marshal(cmd)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal getBalance message: %w", err)
+		return nil, fmt.Errorf("failed to marshal getBalance: %w", err)
 	}
 
-	streamClient.mutex.Lock()
-	defer streamClient.mutex.Unlock()
-
-	if err := streamClient.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return nil, fmt.Errorf("failed to write getBalance message: %w", err)
-	}
-
-	return streamClient.getBalanceChan, nil
+	return c.getBalanceChan, c.write(data)
 }
 
-func (streamClient *StreamClient) UnsubGetBalance() error {
-	streamClient.mutex.Lock()
-	defer streamClient.mutex.Unlock()
+func (c *StreamClient) StopBalance() error {
 
-	data := []byte("{\"command\":\"stopBalance\"}")
-	if err := streamClient.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return fmt.Errorf("failed to write stopBalance message: %w", err)
+	cmd := streamCommand{
+		Command: "stopBalance",
 	}
 
-	return nil
-}
-
-func (streamClient *StreamClient) SubGetCandles(symbol string) (chan CandleRecord, error) {
-	msg := struct {
-		Command   string `json:"command"`
-		SessionId string `json:"streamSessionId"`
-		Symbol    string `json:"symbol"`
-	}{Command: "getCandles", SessionId: streamClient.StreamSessionId, Symbol: symbol}
-
-	data, err := json.Marshal(msg)
+	data, err := json.Marshal(cmd)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal getCandles message: %w", err)
+		return fmt.Errorf("failed to marshal stopBalance: %w", err)
 	}
 
-	streamClient.mutex.Lock()
-	defer streamClient.mutex.Unlock()
-
-	if err := streamClient.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return nil, fmt.Errorf("failed to write getCandles message: %w", err)
-	}
-
-	return streamClient.getCandlesChan, nil
+	return c.write(data)
 }
 
-func (streamClient *StreamClient) UnsubGetCandles(symbol string) error {
-	msg := struct {
-		Command string `json:"command"`
-		Symbol  string `json:"symbol"`
-	}{Command: "stopCandles", Symbol: symbol}
+func (c *StreamClient) GetCandles(symbol string) (chan CandleRecord, error) {
 
-	data, err := json.Marshal(msg)
+	cmd := streamCommand{
+		Command:         "getCandles",
+		StreamSessionId: c.StreamSessionId,
+		Symbol:          symbol,
+	}
+
+	data, err := json.Marshal(cmd)
 	if err != nil {
-		return fmt.Errorf("failed to marshal stopCandles message: %w", err)
+		return nil, fmt.Errorf("failed to marshal getCandles: %w", err)
 	}
 
-	streamClient.mutex.Lock()
-	defer streamClient.mutex.Unlock()
-
-	if err := streamClient.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return fmt.Errorf("failed to write stopCandles message: %w", err)
-	}
-
-	return nil
+	return c.getCandlesChan, c.write(data)
 }
 
-func (streamClient *StreamClient) SubGetKeepAlive() (chan KeepAliveRecord, error) {
-	msg := struct {
-		Command   string `json:"command"`
-		SessionId string `json:"streamSessionId"`
-	}{Command: "getKeepAlive", SessionId: streamClient.StreamSessionId}
+func (c *StreamClient) StopCandles(symbol string) error {
 
-	data, err := json.Marshal(msg)
+	cmd := streamCommand{
+		Command: "stopCandles",
+		Symbol:  symbol,
+	}
+
+	data, err := json.Marshal(cmd)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal getKeepAlive message: %w", err)
+		return fmt.Errorf("failed to marshal stopCandles: %w", err)
 	}
 
-	streamClient.mutex.Lock()
-	defer streamClient.mutex.Unlock()
-
-	if err := streamClient.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return nil, fmt.Errorf("failed to write getKeepAlive message: %w", err)
-	}
-
-	return streamClient.getKeepAliveChan, nil
+	return c.write(data)
 }
 
-func (streamClient *StreamClient) UnsubGetKeepAlive() error {
-	streamClient.mutex.Lock()
-	defer streamClient.mutex.Unlock()
+func (c *StreamClient) GetKeepAlive() (chan KeepAliveRecord, error) {
 
-	data := []byte("{\"command\":\"stopKeepAlive\"}")
-	if err := streamClient.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return fmt.Errorf("failed to write stopKeepAlive message: %w", err)
+	cmd := streamCommand{
+		Command:         "getKeepAlive",
+		StreamSessionId: c.StreamSessionId,
 	}
 
-	return nil
-}
-
-func (streamClient *StreamClient) SubNews() (chan NewsRecord, error) {
-	msg := struct {
-		Command   string `json:"command"`
-		SessionId string `json:"streamSessionId"`
-	}{Command: "getNews", SessionId: streamClient.StreamSessionId}
-
-	data, err := json.Marshal(msg)
+	data, err := json.Marshal(cmd)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal getNews message: %w", err)
+		return nil, fmt.Errorf("failed to marshal getKeepAlive: %w", err)
 	}
 
-	streamClient.mutex.Lock()
-	defer streamClient.mutex.Unlock()
-
-	if err := streamClient.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return nil, fmt.Errorf("failed to write getNews message: %w", err)
-	}
-
-	return streamClient.getNewsChan, nil
+	return c.getKeepAliveChan, c.write(data)
 }
 
-func (streamClient *StreamClient) UnsubNews() error {
-	streamClient.mutex.Lock()
-	defer streamClient.mutex.Unlock()
+func (c *StreamClient) StopKeepAlive() error {
 
-	data := []byte("{\"command\":\"stopNews\"}")
-	if err := streamClient.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return fmt.Errorf("failed to write stopNews message: %w", err)
+	cmd := streamCommand{
+		Command: "stopKeepAlive",
 	}
 
-	return nil
-}
-
-func (streamClient *StreamClient) SubProfits() (chan ProfitsRecord, error) {
-	msg := struct {
-		Command   string `json:"command"`
-		SessionId string `json:"streamSessionId"`
-	}{Command: "getProfits", SessionId: streamClient.StreamSessionId}
-
-	data, err := json.Marshal(msg)
+	data, err := json.Marshal(cmd)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal getProfits message: %w", err)
+		return fmt.Errorf("failed to marshal stopKeepAlive: %w", err)
 	}
 
-	streamClient.mutex.Lock()
-	defer streamClient.mutex.Unlock()
-
-	if err := streamClient.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return nil, fmt.Errorf("failed to write getProfits message: %w", err)
-	}
-
-	return streamClient.getProfitsChan, nil
+	return c.write(data)
 }
 
-func (streamClient *StreamClient) UnsubProfits() error {
-	streamClient.mutex.Lock()
-	defer streamClient.mutex.Unlock()
+func (c *StreamClient) GetNews() (chan NewsRecord, error) {
 
-	data := []byte("{\"command\":\"stopProfits\"}")
-	if err := streamClient.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return fmt.Errorf("failed to write stopProfits message: %w", err)
+	cmd := streamCommand{
+		Command:         "getNews",
+		StreamSessionId: c.StreamSessionId,
 	}
 
-	return nil
-}
-
-func (streamClient *StreamClient) SubGetTickPrices(symbol string, minArrivalTime, maxLevel int) (chan TickPricesRecord, error) {
-	msg := struct {
-		Command        string `json:"command"`
-		SessionId      string `json:"streamSessionId"`
-		Symbol         string `json:"symbol"`
-		MinArrivalTime int    `json:"minArrivalTime"`
-		MaxLevel       int    `json:"maxLevel"`
-	}{Command: "getTickPrices", SessionId: streamClient.StreamSessionId,
-		Symbol: symbol, MinArrivalTime: minArrivalTime, MaxLevel: maxLevel}
-
-	data, err := json.Marshal(msg)
+	data, err := json.Marshal(cmd)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal getTickPrices message: %w", err)
+		return nil, fmt.Errorf("failed to marshal getNews: %w", err)
 	}
 
-	streamClient.mutex.Lock()
-	defer streamClient.mutex.Unlock()
-
-	if err := streamClient.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return nil, fmt.Errorf("failed to write getTickPrices message: %w", err)
-	}
-
-	return streamClient.getTickPricesChan, nil
+	return c.getNewsChan, c.write(data)
 }
 
-func (streamClient *StreamClient) UnsubGetTickPrices(symbol string) error {
-	msg := struct {
-		Command string `json:"command"`
-		Symbol  string `json:"symbol"`
-	}{Command: "stopTickPrices", Symbol: symbol}
+func (c *StreamClient) StopNews() error {
 
-	data, err := json.Marshal(msg)
+	cmd := streamCommand{
+		Command: "stopNews",
+	}
+
+	data, err := json.Marshal(cmd)
 	if err != nil {
-		return fmt.Errorf("failed to marshal stopTickPrices message: %w", err)
+		return fmt.Errorf("failed to marshal stopNews: %w", err)
 	}
 
-	streamClient.mutex.Lock()
-	defer streamClient.mutex.Unlock()
-
-	if err := streamClient.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return fmt.Errorf("failed to write stopTickPrices message: %w", err)
-	}
-
-	return nil
+	return c.write(data)
 }
 
-func (streamClient *StreamClient) SubTrades() (chan TradesRecord, error) {
-	msg := struct {
-		Command   string `json:"command"`
-		SessionId string `json:"streamSessionId"`
-	}{Command: "getTrades", SessionId: streamClient.StreamSessionId}
+func (c *StreamClient) GetProfits() (chan ProfitsRecord, error) {
 
-	data, err := json.Marshal(msg)
+	cmd := streamCommand{
+		Command:         "getProfits",
+		StreamSessionId: c.StreamSessionId,
+	}
+
+	data, err := json.Marshal(cmd)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal getTrades message: %w", err)
+		return nil, fmt.Errorf("failed to marshal getProfits: %w", err)
 	}
 
-	streamClient.mutex.Lock()
-	defer streamClient.mutex.Unlock()
-
-	if err := streamClient.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return nil, fmt.Errorf("failed to write getTrades message: %w", err)
-	}
-
-	return streamClient.getTradesChan, nil
+	return c.getProfitsChan, c.write(data)
 }
 
-func (streamClient *StreamClient) UnsubTrades() error {
-	streamClient.mutex.Lock()
-	defer streamClient.mutex.Unlock()
+func (c *StreamClient) StopProfits() error {
 
-	data := []byte("{\"command\":\"stopTrades\"}")
-	if err := streamClient.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return fmt.Errorf("failed to write stopTrades message: %w", err)
+	cmd := streamCommand{
+		Command: "stopProfits",
 	}
 
-	return nil
-}
-
-func (streamClient *StreamClient) SubTradeStatus() (chan TradeStatusRecord, error) {
-	msg := struct {
-		Command   string `json:"command"`
-		SessionId string `json:"streamSessionId"`
-	}{Command: "getTradeStatus", SessionId: streamClient.StreamSessionId}
-
-	data, err := json.Marshal(msg)
+	data, err := json.Marshal(cmd)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal getTradeStatus message: %w", err)
+		return fmt.Errorf("failed to marshal stopProfits: %w", err)
 	}
 
-	streamClient.mutex.Lock()
-	defer streamClient.mutex.Unlock()
-
-	if err := streamClient.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return nil, fmt.Errorf("failed to write getTradeStatus message: %w", err)
-	}
-
-	return streamClient.getTradeStatusChan, nil
+	return c.write(data)
 }
 
-func (streamClient *StreamClient) UnsubTradeStatus() error {
-	streamClient.mutex.Lock()
-	defer streamClient.mutex.Unlock()
+func (c *StreamClient) GetTickPrices(symbol string, minArrivalTime, maxLevel int) (chan TickPricesRecord, error) {
 
-	data := []byte("{\"command\":\"stopTradeStatus\"}")
-	if err := streamClient.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return fmt.Errorf("failed to write stopTradeStatus message: %w", err)
+	cmd := streamCommand{
+		Command:         "getTickPrices",
+		StreamSessionId: c.StreamSessionId,
+		Symbol:          symbol,
+		MinArrivalTime:  minArrivalTime,
+		MaxLevel:        maxLevel,
 	}
 
-	return nil
-}
-
-func (streamClient *StreamClient) Ping() error {
-	msg := struct {
-		Command   string `json:"command"`
-		SessionId string `json:"streamSessionId"`
-	}{Command: "ping", SessionId: streamClient.StreamSessionId}
-
-	data, err := json.Marshal(msg)
+	data, err := json.Marshal(cmd)
 	if err != nil {
-		return fmt.Errorf("failed to marshal ping message: %w", err)
+		return nil, fmt.Errorf("failed to marshal getTickPrices: %w", err)
 	}
 
-	streamClient.mutex.Lock()
-	defer streamClient.mutex.Unlock()
-
-	if err := streamClient.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return fmt.Errorf("failed to write ping message: %w", err)
-	}
-
-	return nil
+	return c.getTickPricesChan, c.write(data)
 }
 
-func (streamClient *StreamClient) Listen(ctx context.Context) error {
+func (c *StreamClient) StopTickPrices(symbol string) error {
+
+	cmd := streamCommand{
+		Command: "stopTickPrices",
+		Symbol:  symbol,
+	}
+
+	data, err := json.Marshal(cmd)
+	if err != nil {
+		return fmt.Errorf("failed to marshal stopTickPrices: %w", err)
+	}
+
+	return c.write(data)
+}
+
+func (c *StreamClient) GetTrades() (chan TradesRecord, error) {
+
+	cmd := streamCommand{
+		Command:         "getTrades",
+		StreamSessionId: c.StreamSessionId,
+	}
+
+	data, err := json.Marshal(cmd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal getTrades: %w", err)
+	}
+
+	return c.getTradesChan, c.write(data)
+}
+
+func (c *StreamClient) StopTrades() error {
+
+	cmd := streamCommand{
+		Command: "stopTrades",
+	}
+
+	data, err := json.Marshal(cmd)
+	if err != nil {
+		return fmt.Errorf("failed to marshal stopTrades: %w", err)
+	}
+
+	return c.write(data)
+}
+
+func (c *StreamClient) GetTradeStatus() (chan TradeStatusRecord, error) {
+
+	cmd := streamCommand{
+		Command:         "getTradeStatus",
+		StreamSessionId: c.StreamSessionId,
+	}
+
+	data, err := json.Marshal(cmd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal getTradeStatus: %w", err)
+	}
+
+	return c.getTradeStatusChan, c.write(data)
+}
+
+func (c *StreamClient) StopTradeStatus() error {
+
+	cmd := streamCommand{
+		Command: "stopTradeStatus",
+	}
+
+	data, err := json.Marshal(cmd)
+	if err != nil {
+		return fmt.Errorf("failed to marshal stopTradeStatus: %w", err)
+	}
+
+	return c.write(data)
+}
+
+func (c *StreamClient) Ping() error {
+
+	cmd := streamCommand{
+		Command:         "ping",
+		StreamSessionId: c.StreamSessionId,
+	}
+
+	data, err := json.Marshal(cmd)
+	if err != nil {
+		return fmt.Errorf("failed to marshal ping: %w", err)
+	}
+
+	return c.write(data)
+}
+
+func (c *StreamClient) Listen(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
 		default:
-			_, rawBytes, err := streamClient.wsConn.ReadMessage()
+			_, rawBytes, err := c.conn.ReadMessage()
 			if err != nil {
 				return fmt.Errorf("error reading message: %v", err)
 			}
 
-			var streamRecord StreamRecord
+			var streamRecord streamRecord
 			err = json.Unmarshal(rawBytes, &streamRecord)
 			if err != nil {
 				return fmt.Errorf("unable to unmarshal raw message: %w", err)
@@ -399,52 +357,64 @@ func (streamClient *StreamClient) Listen(ctx context.Context) error {
 				if err := json.Unmarshal(streamRecord.Data, &balanceRecord); err != nil {
 					return fmt.Errorf("unable to unmarshal balance record: %w", err)
 				}
-				streamClient.getBalanceChan <- balanceRecord
+				c.getBalanceChan <- balanceRecord
 			case "candle":
 				var candleRecord CandleRecord
 				if err := json.Unmarshal(streamRecord.Data, &candleRecord); err != nil {
 					return fmt.Errorf("unable to unmarshal candle record: %w", err)
 				}
-				streamClient.getCandlesChan <- candleRecord
+				c.getCandlesChan <- candleRecord
 			case "keepAlive":
 				var keepAliveRecord KeepAliveRecord
 				if err := json.Unmarshal(streamRecord.Data, &keepAliveRecord); err != nil {
 					return fmt.Errorf("unable to unmarshal keep alive record: %w", err)
 				}
-				streamClient.getKeepAliveChan <- keepAliveRecord
+				c.getKeepAliveChan <- keepAliveRecord
 			case "news":
 				var newsRecord NewsRecord
 				if err := json.Unmarshal(streamRecord.Data, &newsRecord); err != nil {
 					return fmt.Errorf("unable to unmarshal news record: %w", err)
 				}
-				streamClient.getNewsChan <- newsRecord
+				c.getNewsChan <- newsRecord
 			case "profit":
 				var profitsRecord ProfitsRecord
 				if err := json.Unmarshal(streamRecord.Data, &profitsRecord); err != nil {
 					return fmt.Errorf("unable to unmarshal profits record: %w", err)
 				}
-				streamClient.getProfitsChan <- profitsRecord
+				c.getProfitsChan <- profitsRecord
 			case "tickPrices":
 				var tickPricesRecord TickPricesRecord
 				if err := json.Unmarshal(streamRecord.Data, &tickPricesRecord); err != nil {
 					return fmt.Errorf("unable to unmarshal tick prices record: %w", err)
 				}
-				streamClient.getTickPricesChan <- tickPricesRecord
+				c.getTickPricesChan <- tickPricesRecord
 			case "trade":
 				var tradesRecord TradesRecord
 				if err := json.Unmarshal(streamRecord.Data, &tradesRecord); err != nil {
 					return fmt.Errorf("unable to unmarshal trades record: %w", err)
 				}
-				streamClient.getTradesChan <- tradesRecord
+				c.getTradesChan <- tradesRecord
 			case "tradeStatus":
 				var tradeStatusRecord TradeStatusRecord
 				if err := json.Unmarshal(streamRecord.Data, &tradeStatusRecord); err != nil {
 					return fmt.Errorf("unable to unmarshal trade status record: %w", err)
 				}
-				streamClient.getTradeStatusChan <- tradeStatusRecord
+				c.getTradeStatusChan <- tradeStatusRecord
 			default:
 				return fmt.Errorf("invalid command: %s", streamRecord.Command)
 			}
 		}
 	}
+}
+
+func (c *StreamClient) write(data []byte) error {
+
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	if err := c.conn.WriteMessage(websocket.TextMessage, data); err != nil {
+		return fmt.Errorf("failed to write: %w", err)
+	}
+
+	return nil
 }

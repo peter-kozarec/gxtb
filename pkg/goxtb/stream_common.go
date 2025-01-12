@@ -1,12 +1,5 @@
 package goxtb
 
-import "encoding/json"
-
-type StreamRecord struct {
-	Command string          `json:"command"`
-	Data    json.RawMessage `json:"data"`
-}
-
 type BalanceRecord struct {
 	Balance     float32 `json:"balance"`
 	Credit      float32 `json:"credit"`
