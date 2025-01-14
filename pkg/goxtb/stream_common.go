@@ -32,7 +32,7 @@ type BalanceRecord struct {
 	MarginLevel float32 `json:"marginLevel"`
 }
 
-func (_ BalanceRecord) Type() RecordType {
+func (r BalanceRecord) Type() RecordType {
 	return BalanceRecordType
 }
 
@@ -48,7 +48,7 @@ type CandleRecord struct {
 	Volume    float32 `json:"vol"`
 }
 
-func (_ CandleRecord) Type() RecordType {
+func (r CandleRecord) Type() RecordType {
 	return CandlesRecordType
 }
 
@@ -56,7 +56,7 @@ type KeepAliveRecord struct {
 	Timestamp int64 `json:"timestamp"`
 }
 
-func (_ KeepAliveRecord) Type() RecordType {
+func (r KeepAliveRecord) Type() RecordType {
 	return KeepAliveRecordType
 }
 
@@ -67,7 +67,7 @@ type NewsRecord struct {
 	Title string `json:"title"`
 }
 
-func (_ NewsRecord) Type() RecordType {
+func (r NewsRecord) Type() RecordType {
 	return NewsRecordType
 }
 
@@ -78,7 +78,7 @@ type ProfitsRecord struct {
 	Profit   float32 `json:"profit"`
 }
 
-func (_ ProfitsRecord) Type() RecordType {
+func (r ProfitsRecord) Type() RecordType {
 	return ProfitsRecordType
 }
 
@@ -97,7 +97,7 @@ type TickPricesRecord struct {
 	Timestamp   int64   `json:"timestamp"`
 }
 
-func (_ TickPricesRecord) Type() RecordType {
+func (r TickPricesRecord) Type() RecordType {
 	return TickPricesRecordType
 }
 
@@ -128,7 +128,7 @@ type TradesRecord struct {
 	Volume        float32  `json:"volume"`
 }
 
-func (_ TradesRecord) Type() RecordType {
+func (r TradesRecord) Type() RecordType {
 	return TradesRecordType
 }
 
@@ -140,6 +140,6 @@ type TradeStatusRecord struct {
 	RequestStatus int     `json:"requestStatus"`
 }
 
-func (_ TradeStatusRecord) Type() RecordType {
+func (r TradeStatusRecord) Type() RecordType {
 	return TradeStatusRecordType
 }

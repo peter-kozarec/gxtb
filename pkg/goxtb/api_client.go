@@ -53,6 +53,7 @@ func (c *ApiClient) Login(ctx context.Context, r LoginRequest) (sessionId string
 }
 
 func createLoginRequest(r LoginRequest) ([]byte, error) {
+
 	arguments, err := json.Marshal(r)
 	if err != nil {
 		return []byte{}, fmt.Errorf("failed to marshal login request arguments: %w", err)
