@@ -1,5 +1,28 @@
 package goxtb
 
+type RecordType string
+
+const (
+	InvalidRecordType     RecordType = "InvalidRecord"
+	BalanceRecordType     RecordType = "BalanceRecord"
+	CandlesRecordType     RecordType = "CandlesRecord"
+	KeepAliveRecordType   RecordType = "KeepAliveRecord"
+	NewsRecordType        RecordType = "NewsRecord"
+	ProfitsRecordType     RecordType = "ProfitsRecord"
+	TickPricesRecordType  RecordType = "TickPricesRecord"
+	TradesRecordType      RecordType = "TradesRecord"
+	TradeStatusRecordType RecordType = "TradeStatusRecord"
+)
+
+type Record interface {
+	Type() RecordType
+}
+
+type RecordMessage struct {
+	Value Record
+	Err   error
+}
+
 type BalanceRecord struct {
 	Balance     float32 `json:"balance"`
 	Credit      float32 `json:"credit"`
@@ -7,6 +30,10 @@ type BalanceRecord struct {
 	Margin      float32 `json:"margin"`
 	MarginFree  float32 `json:"marginFree"`
 	MarginLevel float32 `json:"marginLevel"`
+}
+
+func (_ BalanceRecord) Type() RecordType {
+	return BalanceRecordType
 }
 
 type CandleRecord struct {
@@ -21,8 +48,16 @@ type CandleRecord struct {
 	Volume    float32 `json:"vol"`
 }
 
+func (_ CandleRecord) Type() RecordType {
+	return CandlesRecordType
+}
+
 type KeepAliveRecord struct {
 	Timestamp int64 `json:"timestamp"`
+}
+
+func (_ KeepAliveRecord) Type() RecordType {
+	return KeepAliveRecordType
 }
 
 type NewsRecord struct {
@@ -32,11 +67,19 @@ type NewsRecord struct {
 	Title string `json:"title"`
 }
 
+func (_ NewsRecord) Type() RecordType {
+	return NewsRecordType
+}
+
 type ProfitsRecord struct {
 	Order    int     `json:"order"`
 	Order2   int     `json:"order2"`
 	Position int     `json:"position"`
 	Profit   float32 `json:"profit"`
+}
+
+func (_ ProfitsRecord) Type() RecordType {
+	return ProfitsRecordType
 }
 
 type TickPricesRecord struct {
@@ -52,6 +95,10 @@ type TickPricesRecord struct {
 	SpreadTable float32 `json:"spreadTable"`
 	Symbol      string  `json:"symbol"`
 	Timestamp   int64   `json:"timestamp"`
+}
+
+func (_ TickPricesRecord) Type() RecordType {
+	return TickPricesRecordType
 }
 
 type TradesRecord struct {
@@ -81,10 +128,18 @@ type TradesRecord struct {
 	Volume        float32  `json:"volume"`
 }
 
+func (_ TradesRecord) Type() RecordType {
+	return TradesRecordType
+}
+
 type TradeStatusRecord struct {
 	CustomComment string  `json:"customComment"`
 	Message       *string `json:"message"`
 	Order         int     `json:"order"`
 	Price         float32 `json:"price"`
 	RequestStatus int     `json:"requestStatus"`
+}
+
+func (_ TradeStatusRecord) Type() RecordType {
+	return TradeStatusRecordType
 }

@@ -21,11 +21,6 @@ type streamRecord struct {
 	Data    json.RawMessage `json:"data"`
 }
 
-type RecordMessage struct {
-	Value interface{}
-	Err   error
-}
-
 type StreamClient struct {
 	conn *websocket.Conn
 	url  string
@@ -327,7 +322,7 @@ func (c *StreamClient) Listen(ctx context.Context) <-chan RecordMessage {
 			case <-ctx.Done():
 				return
 			default:
-				recordMessage := RecordMessage{Value: nil, Err: nil}
+				recordMessage := RecordMessage{}
 
 				_, rawBytes, err := c.conn.ReadMessage()
 				if err != nil {
