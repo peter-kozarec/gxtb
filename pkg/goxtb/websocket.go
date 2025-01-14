@@ -15,12 +15,12 @@ type wsConn interface {
 	read(ctx context.Context) ([]byte, error)
 }
 
-type wsImpl struct {
+type wsConnImpl struct {
 	conn *websocket.Conn
 	mu   sync.Mutex
 }
 
-func (w *wsImpl) connect(url string) error {
+func (w *wsConnImpl) connect(url string) error {
 	var err error
 	w.conn, _, err = websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
@@ -29,14 +29,14 @@ func (w *wsImpl) connect(url string) error {
 	return nil
 }
 
-func (w *wsImpl) disconnect() error {
+func (w *wsConnImpl) disconnect() error {
 	if err := w.conn.Close(); err != nil {
 		return fmt.Errorf("failed to close connection: %w", err)
 	}
 	return nil
 }
 
-func (w *wsImpl) write(ctx context.Context, data []byte) error {
+func (w *wsConnImpl) write(ctx context.Context, data []byte) error {
 	errChan := make(chan error, 1)
 
 	go func() {
@@ -59,7 +59,7 @@ func (w *wsImpl) write(ctx context.Context, data []byte) error {
 	}
 }
 
-func (w *wsImpl) read(ctx context.Context) ([]byte, error) {
+func (w *wsConnImpl) read(ctx context.Context) ([]byte, error) {
 	dataChan := make(chan []byte, 1)
 	errChan := make(chan error, 1)
 

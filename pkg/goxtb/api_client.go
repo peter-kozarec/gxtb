@@ -13,14 +13,14 @@ type ApiClient struct {
 
 func NewApiClient() *ApiClient {
 	return &ApiClient{
-		conn: new(wsImpl),
+		conn: new(wsConnImpl),
 		url:  "wss://ws.xtb.com/real",
 	}
 }
 
 func NewApiDemoClient() *ApiClient {
 	return &ApiClient{
-		conn: new(wsImpl),
+		conn: new(wsConnImpl),
 		url:  "wss://ws.xtb.com/demo",
 	}
 }

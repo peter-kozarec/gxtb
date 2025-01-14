@@ -28,14 +28,14 @@ type StreamClient struct {
 
 func NewStreamClient() *StreamClient {
 	return &StreamClient{
-		conn: new(wsImpl),
+		conn: new(wsConnImpl),
 		url:  "wss://ws.xtb.com/realStream",
 	}
 }
 
 func NewStreamDemoClient() *StreamClient {
 	return &StreamClient{
-		conn: new(wsImpl),
+		conn: new(wsConnImpl),
 		url:  "wss://ws.xtb.com/demoStream",
 	}
 }
