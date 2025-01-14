@@ -1,69 +1,55 @@
 package goxtb
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"sync"
-
-	"github.com/gorilla/websocket"
 )
 
-type Client struct {
-	wsConn *websocket.Conn
-	wsUrl  string
-	mutex  sync.Mutex
+type ApiClient struct {
+	conn wsConn
+	url  string
 }
 
-func NewClient() *Client {
-	return &Client{
-		wsConn: nil,
-		wsUrl:  "wss://ws.xtb.com/real",
+func NewApiClient() *ApiClient {
+	return &ApiClient{
+		conn: new(wsImpl),
+		url:  "wss://ws.xtb.com/real",
 	}
 }
 
-func NewDemoClient() *Client {
-	return &Client{
-		wsConn: nil,
-		wsUrl:  "wss://ws.xtb.com/demo",
+func NewApiDemoClient() *ApiClient {
+	return &ApiClient{
+		conn: new(wsImpl),
+		url:  "wss://ws.xtb.com/demo",
 	}
 }
 
-func (client *Client) Connect() error {
-	var err error
-	client.wsConn, _, err = websocket.DefaultDialer.Dial(client.wsUrl, nil)
-	if err != nil {
-		return fmt.Errorf("failed to connect: %w", err)
-	}
-	return nil
+func (c *ApiClient) Connect() error {
+	return c.conn.connect(c.url)
 }
 
-func (client *Client) Close() {
-	client.wsConn.Close()
+func (c *ApiClient) Disconnect() {
+	c.conn.disconnect()
 }
 
-func (c *Client) Login(r LoginRequest) (sessionId string, err error) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
+func (c *ApiClient) Login(ctx context.Context, r LoginRequest) (sessionId string, err error) {
 
-	if c.wsConn == nil {
-		return "", fmt.Errorf("WebSocket connection is not initialized")
-	}
-
-	data, err := createLoginRequest(r)
+	request, err := createLoginRequest(r)
 	if err != nil {
 		return "", fmt.Errorf("")
 	}
 
-	if err := c.wsConn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return "", fmt.Errorf("failed to write login request to WebSocket: %w", err)
+	if err := c.conn.write(ctx, request); err != nil {
+		return "", fmt.Errorf("login request: %w", err)
 	}
 
-	_, responseData, err := c.wsConn.ReadMessage()
+	response, err := c.conn.read(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to read login response from WebSocket: %w", err)
+		return "", fmt.Errorf("login response: %w", err)
 	}
 
-	return parseLoginResponse(responseData)
+	return parseLoginResponse(response)
 }
 
 func createLoginRequest(r LoginRequest) ([]byte, error) {
