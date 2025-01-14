@@ -21,19 +21,16 @@ type streamRecord struct {
 	Data    json.RawMessage `json:"data"`
 }
 
+type RecordMessage struct {
+	Value interface{}
+	Err   error
+}
+
 type StreamClient struct {
 	conn *websocket.Conn
 	url  string
 
-	GetBalanceChan     chan BalanceRecord
-	GetCandlesChan     chan CandleRecord
-	GetKeepAliveChan   chan KeepAliveRecord
-	GetNewsChan        chan NewsRecord
-	GetProfitsChan     chan ProfitsRecord
-	GetTickPricesChan  chan TickPricesRecord
-	GetTradesChan      chan TradesRecord
-	GetTradeStatusChan chan TradeStatusRecord
-	StreamSessionId    string
+	StreamSessionId string
 }
 
 func NewStreamClient() *StreamClient {
@@ -316,80 +313,113 @@ func (c *StreamClient) Ping() error {
 	return c.write(data)
 }
 
-func (c *StreamClient) Listen(ctx context.Context) error {
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		default:
-			_, rawBytes, err := c.conn.ReadMessage()
-			if err != nil {
-				if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-					return nil
-				}
-				return fmt.Errorf("error reading message: %v", err)
-			}
+func (c *StreamClient) Listen(ctx context.Context) <-chan RecordMessage {
 
-			var streamRecord streamRecord
-			err = json.Unmarshal(rawBytes, &streamRecord)
-			if err != nil {
-				return fmt.Errorf("unable to unmarshal raw message: %w", err)
-			}
+	recordChan := make(chan RecordMessage)
 
-			switch streamRecord.Command {
-			case "balance":
-				var balanceRecord BalanceRecord
-				if err := json.Unmarshal(streamRecord.Data, &balanceRecord); err != nil {
-					return fmt.Errorf("unable to unmarshal balance record: %w", err)
-				}
-				c.GetBalanceChan <- balanceRecord
-			case "candle":
-				var candleRecord CandleRecord
-				if err := json.Unmarshal(streamRecord.Data, &candleRecord); err != nil {
-					return fmt.Errorf("unable to unmarshal candle record: %w", err)
-				}
-				c.GetCandlesChan <- candleRecord
-			case "keepAlive":
-				var keepAliveRecord KeepAliveRecord
-				if err := json.Unmarshal(streamRecord.Data, &keepAliveRecord); err != nil {
-					return fmt.Errorf("unable to unmarshal keep alive record: %w", err)
-				}
-				c.GetKeepAliveChan <- keepAliveRecord
-			case "news":
-				var newsRecord NewsRecord
-				if err := json.Unmarshal(streamRecord.Data, &newsRecord); err != nil {
-					return fmt.Errorf("unable to unmarshal news record: %w", err)
-				}
-				c.GetNewsChan <- newsRecord
-			case "profit":
-				var profitsRecord ProfitsRecord
-				if err := json.Unmarshal(streamRecord.Data, &profitsRecord); err != nil {
-					return fmt.Errorf("unable to unmarshal profits record: %w", err)
-				}
-				c.GetProfitsChan <- profitsRecord
-			case "tickPrices":
-				var tickPricesRecord TickPricesRecord
-				if err := json.Unmarshal(streamRecord.Data, &tickPricesRecord); err != nil {
-					return fmt.Errorf("unable to unmarshal tick prices record: %w", err)
-				}
-				c.GetTickPricesChan <- tickPricesRecord
-			case "trade":
-				var tradesRecord TradesRecord
-				if err := json.Unmarshal(streamRecord.Data, &tradesRecord); err != nil {
-					return fmt.Errorf("unable to unmarshal trades record: %w", err)
-				}
-				c.GetTradesChan <- tradesRecord
-			case "tradeStatus":
-				var tradeStatusRecord TradeStatusRecord
-				if err := json.Unmarshal(streamRecord.Data, &tradeStatusRecord); err != nil {
-					return fmt.Errorf("unable to unmarshal trade status record: %w", err)
-				}
-				c.GetTradeStatusChan <- tradeStatusRecord
+	go func() {
+		defer close(recordChan)
+		for {
+			select {
+			case <-ctx.Done():
+				return
 			default:
-				return fmt.Errorf("invalid command: %s", streamRecord.Command)
+				recordMessage := RecordMessage{Value: nil, Err: nil}
+
+				_, rawBytes, err := c.conn.ReadMessage()
+				if err != nil {
+					if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+						recordMessage.Err = fmt.Errorf("error reading message: %v", err)
+						recordChan <- recordMessage
+					}
+					return
+				}
+
+				var streamRecord streamRecord
+				err = json.Unmarshal(rawBytes, &streamRecord)
+				if err != nil {
+					recordMessage.Err = fmt.Errorf("unable to unmarshal raw message: %w", err)
+					recordChan <- recordMessage
+					return
+				}
+
+				switch streamRecord.Command {
+				case "balance":
+					var balanceRecord BalanceRecord
+					if err := json.Unmarshal(streamRecord.Data, &balanceRecord); err != nil {
+						recordMessage.Err = fmt.Errorf("unable to unmarshal balance record: %w", err)
+						recordChan <- recordMessage
+						return
+					}
+					recordMessage.Value = balanceRecord
+				case "candle":
+					var candleRecord CandleRecord
+					if err := json.Unmarshal(streamRecord.Data, &candleRecord); err != nil {
+						recordMessage.Err = fmt.Errorf("unable to unmarshal candle record: %w", err)
+						recordChan <- recordMessage
+						return
+					}
+					recordMessage.Value = candleRecord
+				case "keepAlive":
+					var keepAliveRecord KeepAliveRecord
+					if err := json.Unmarshal(streamRecord.Data, &keepAliveRecord); err != nil {
+						recordMessage.Err = fmt.Errorf("unable to unmarshal keep alive record: %w", err)
+						recordChan <- recordMessage
+						return
+					}
+					recordMessage.Value = keepAliveRecord
+				case "news":
+					var newsRecord NewsRecord
+					if err := json.Unmarshal(streamRecord.Data, &newsRecord); err != nil {
+						recordMessage.Err = fmt.Errorf("unable to unmarshal news record: %w", err)
+						recordChan <- recordMessage
+						return
+					}
+					recordMessage.Value = newsRecord
+				case "profit":
+					var profitsRecord ProfitsRecord
+					if err := json.Unmarshal(streamRecord.Data, &profitsRecord); err != nil {
+						recordMessage.Err = fmt.Errorf("unable to unmarshal profits record: %w", err)
+						recordChan <- recordMessage
+						return
+					}
+					recordMessage.Value = profitsRecord
+				case "tickPrices":
+					var tickPricesRecord TickPricesRecord
+					if err := json.Unmarshal(streamRecord.Data, &tickPricesRecord); err != nil {
+						recordMessage.Err = fmt.Errorf("unable to unmarshal tick prices record: %w", err)
+						recordChan <- recordMessage
+						return
+					}
+					recordMessage.Value = tickPricesRecord
+				case "trade":
+					var tradesRecord TradesRecord
+					if err := json.Unmarshal(streamRecord.Data, &tradesRecord); err != nil {
+						recordMessage.Err = fmt.Errorf("unable to unmarshal trades record: %w", err)
+						recordChan <- recordMessage
+						return
+					}
+					recordMessage.Value = tradesRecord
+				case "tradeStatus":
+					var tradeStatusRecord TradeStatusRecord
+					if err := json.Unmarshal(streamRecord.Data, &tradeStatusRecord); err != nil {
+						recordMessage.Err = fmt.Errorf("unable to unmarshal trade status record: %w", err)
+						recordChan <- recordMessage
+						return
+					}
+					recordMessage.Value = tradeStatusRecord
+				default:
+					recordMessage.Err = fmt.Errorf("invalid command: %s", streamRecord.Command)
+					recordChan <- recordMessage
+					return
+				}
+
+				recordChan <- recordMessage
 			}
 		}
-	}
+	}()
+
+	return recordChan
 }
 
 func (c *StreamClient) write(data []byte) error {
