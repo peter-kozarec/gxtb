@@ -56,11 +56,14 @@ func (c *StreamClient) Connect() error {
 	return nil
 }
 
-func (c *StreamClient) Disconnect() {
-	c.conn.Close()
+func (c *StreamClient) Disconnect() error {
+	if err := c.conn.Close(); err != nil {
+		return fmt.Errorf("failed to close connection: %w", err)
+	}
+	return nil
 }
 
-func (c *StreamClient) GetBalance() error {
+func (c *StreamClient) GetBalance(ctx context.Context) error {
 
 	cmd := streamCommand{
 		Command:         "getBalance",
@@ -72,10 +75,10 @@ func (c *StreamClient) GetBalance() error {
 		return fmt.Errorf("failed to marshal getBalance: %w", err)
 	}
 
-	return c.write(data)
+	return c.write(ctx, data)
 }
 
-func (c *StreamClient) StopBalance() error {
+func (c *StreamClient) StopBalance(ctx context.Context) error {
 
 	cmd := streamCommand{
 		Command: "stopBalance",
@@ -86,10 +89,10 @@ func (c *StreamClient) StopBalance() error {
 		return fmt.Errorf("failed to marshal stopBalance: %w", err)
 	}
 
-	return c.write(data)
+	return c.write(ctx, data)
 }
 
-func (c *StreamClient) GetCandles(symbol string) error {
+func (c *StreamClient) GetCandles(ctx context.Context, symbol string) error {
 
 	cmd := streamCommand{
 		Command:         "getCandles",
@@ -102,10 +105,10 @@ func (c *StreamClient) GetCandles(symbol string) error {
 		return fmt.Errorf("failed to marshal getCandles: %w", err)
 	}
 
-	return c.write(data)
+	return c.write(ctx, data)
 }
 
-func (c *StreamClient) StopCandles(symbol string) error {
+func (c *StreamClient) StopCandles(ctx context.Context, symbol string) error {
 
 	cmd := streamCommand{
 		Command: "stopCandles",
@@ -117,10 +120,10 @@ func (c *StreamClient) StopCandles(symbol string) error {
 		return fmt.Errorf("failed to marshal stopCandles: %w", err)
 	}
 
-	return c.write(data)
+	return c.write(ctx, data)
 }
 
-func (c *StreamClient) GetKeepAlive() error {
+func (c *StreamClient) GetKeepAlive(ctx context.Context) error {
 
 	cmd := streamCommand{
 		Command:         "getKeepAlive",
@@ -132,10 +135,10 @@ func (c *StreamClient) GetKeepAlive() error {
 		return fmt.Errorf("failed to marshal getKeepAlive: %w", err)
 	}
 
-	return c.write(data)
+	return c.write(ctx, data)
 }
 
-func (c *StreamClient) StopKeepAlive() error {
+func (c *StreamClient) StopKeepAlive(ctx context.Context) error {
 
 	cmd := streamCommand{
 		Command: "stopKeepAlive",
@@ -146,10 +149,10 @@ func (c *StreamClient) StopKeepAlive() error {
 		return fmt.Errorf("failed to marshal stopKeepAlive: %w", err)
 	}
 
-	return c.write(data)
+	return c.write(ctx, data)
 }
 
-func (c *StreamClient) GetNews() error {
+func (c *StreamClient) GetNews(ctx context.Context) error {
 
 	cmd := streamCommand{
 		Command:         "getNews",
@@ -161,10 +164,10 @@ func (c *StreamClient) GetNews() error {
 		return fmt.Errorf("failed to marshal getNews: %w", err)
 	}
 
-	return c.write(data)
+	return c.write(ctx, data)
 }
 
-func (c *StreamClient) StopNews() error {
+func (c *StreamClient) StopNews(ctx context.Context) error {
 
 	cmd := streamCommand{
 		Command: "stopNews",
@@ -175,10 +178,10 @@ func (c *StreamClient) StopNews() error {
 		return fmt.Errorf("failed to marshal stopNews: %w", err)
 	}
 
-	return c.write(data)
+	return c.write(ctx, data)
 }
 
-func (c *StreamClient) GetProfits() error {
+func (c *StreamClient) GetProfits(ctx context.Context) error {
 
 	cmd := streamCommand{
 		Command:         "getProfits",
@@ -190,10 +193,10 @@ func (c *StreamClient) GetProfits() error {
 		return fmt.Errorf("failed to marshal getProfits: %w", err)
 	}
 
-	return c.write(data)
+	return c.write(ctx, data)
 }
 
-func (c *StreamClient) StopProfits() error {
+func (c *StreamClient) StopProfits(ctx context.Context) error {
 
 	cmd := streamCommand{
 		Command: "stopProfits",
@@ -204,10 +207,10 @@ func (c *StreamClient) StopProfits() error {
 		return fmt.Errorf("failed to marshal stopProfits: %w", err)
 	}
 
-	return c.write(data)
+	return c.write(ctx, data)
 }
 
-func (c *StreamClient) GetTickPrices(symbol string, minArrivalTime, maxLevel int) error {
+func (c *StreamClient) GetTickPrices(ctx context.Context, symbol string, minArrivalTime, maxLevel int) error {
 
 	cmd := streamCommand{
 		Command:         "getTickPrices",
@@ -222,10 +225,10 @@ func (c *StreamClient) GetTickPrices(symbol string, minArrivalTime, maxLevel int
 		return fmt.Errorf("failed to marshal getTickPrices: %w", err)
 	}
 
-	return c.write(data)
+	return c.write(ctx, data)
 }
 
-func (c *StreamClient) StopTickPrices(symbol string) error {
+func (c *StreamClient) StopTickPrices(ctx context.Context, symbol string) error {
 
 	cmd := streamCommand{
 		Command: "stopTickPrices",
@@ -237,10 +240,10 @@ func (c *StreamClient) StopTickPrices(symbol string) error {
 		return fmt.Errorf("failed to marshal stopTickPrices: %w", err)
 	}
 
-	return c.write(data)
+	return c.write(ctx, data)
 }
 
-func (c *StreamClient) GetTrades() error {
+func (c *StreamClient) GetTrades(ctx context.Context) error {
 
 	cmd := streamCommand{
 		Command:         "getTrades",
@@ -252,10 +255,10 @@ func (c *StreamClient) GetTrades() error {
 		return fmt.Errorf("failed to marshal getTrades: %w", err)
 	}
 
-	return c.write(data)
+	return c.write(ctx, data)
 }
 
-func (c *StreamClient) StopTrades() error {
+func (c *StreamClient) StopTrades(ctx context.Context) error {
 
 	cmd := streamCommand{
 		Command: "stopTrades",
@@ -266,10 +269,10 @@ func (c *StreamClient) StopTrades() error {
 		return fmt.Errorf("failed to marshal stopTrades: %w", err)
 	}
 
-	return c.write(data)
+	return c.write(ctx, data)
 }
 
-func (c *StreamClient) GetTradeStatus() error {
+func (c *StreamClient) GetTradeStatus(ctx context.Context) error {
 
 	cmd := streamCommand{
 		Command:         "getTradeStatus",
@@ -281,10 +284,10 @@ func (c *StreamClient) GetTradeStatus() error {
 		return fmt.Errorf("failed to marshal getTradeStatus: %w", err)
 	}
 
-	return c.write(data)
+	return c.write(ctx, data)
 }
 
-func (c *StreamClient) StopTradeStatus() error {
+func (c *StreamClient) StopTradeStatus(ctx context.Context) error {
 
 	cmd := streamCommand{
 		Command: "stopTradeStatus",
@@ -295,10 +298,10 @@ func (c *StreamClient) StopTradeStatus() error {
 		return fmt.Errorf("failed to marshal stopTradeStatus: %w", err)
 	}
 
-	return c.write(data)
+	return c.write(ctx, data)
 }
 
-func (c *StreamClient) Ping() error {
+func (c *StreamClient) Ping(ctx context.Context) error {
 
 	cmd := streamCommand{
 		Command:         "ping",
@@ -310,7 +313,7 @@ func (c *StreamClient) Ping() error {
 		return fmt.Errorf("failed to marshal ping: %w", err)
 	}
 
-	return c.write(data)
+	return c.write(ctx, data)
 }
 
 func (c *StreamClient) Listen(ctx context.Context) <-chan RecordMessage {
@@ -340,7 +343,7 @@ func (c *StreamClient) Listen(ctx context.Context) <-chan RecordMessage {
 				if err != nil {
 					recordMessage.Err = fmt.Errorf("unable to unmarshal raw message: %w", err)
 					recordChan <- recordMessage
-					return
+					continue
 				}
 
 				switch streamRecord.Command {
@@ -348,70 +351,60 @@ func (c *StreamClient) Listen(ctx context.Context) <-chan RecordMessage {
 					var balanceRecord BalanceRecord
 					if err := json.Unmarshal(streamRecord.Data, &balanceRecord); err != nil {
 						recordMessage.Err = fmt.Errorf("unable to unmarshal balance record: %w", err)
-						recordChan <- recordMessage
-						return
+					} else {
+						recordMessage.Value = balanceRecord
 					}
-					recordMessage.Value = balanceRecord
 				case "candle":
 					var candleRecord CandleRecord
 					if err := json.Unmarshal(streamRecord.Data, &candleRecord); err != nil {
 						recordMessage.Err = fmt.Errorf("unable to unmarshal candle record: %w", err)
-						recordChan <- recordMessage
-						return
+					} else {
+						recordMessage.Value = candleRecord
 					}
-					recordMessage.Value = candleRecord
 				case "keepAlive":
 					var keepAliveRecord KeepAliveRecord
 					if err := json.Unmarshal(streamRecord.Data, &keepAliveRecord); err != nil {
 						recordMessage.Err = fmt.Errorf("unable to unmarshal keep alive record: %w", err)
-						recordChan <- recordMessage
-						return
+					} else {
+						recordMessage.Value = keepAliveRecord
 					}
-					recordMessage.Value = keepAliveRecord
 				case "news":
 					var newsRecord NewsRecord
 					if err := json.Unmarshal(streamRecord.Data, &newsRecord); err != nil {
 						recordMessage.Err = fmt.Errorf("unable to unmarshal news record: %w", err)
-						recordChan <- recordMessage
-						return
+					} else {
+						recordMessage.Value = newsRecord
 					}
-					recordMessage.Value = newsRecord
 				case "profit":
 					var profitsRecord ProfitsRecord
 					if err := json.Unmarshal(streamRecord.Data, &profitsRecord); err != nil {
 						recordMessage.Err = fmt.Errorf("unable to unmarshal profits record: %w", err)
-						recordChan <- recordMessage
-						return
+					} else {
+						recordMessage.Value = profitsRecord
 					}
-					recordMessage.Value = profitsRecord
 				case "tickPrices":
 					var tickPricesRecord TickPricesRecord
 					if err := json.Unmarshal(streamRecord.Data, &tickPricesRecord); err != nil {
 						recordMessage.Err = fmt.Errorf("unable to unmarshal tick prices record: %w", err)
-						recordChan <- recordMessage
-						return
+					} else {
+						recordMessage.Value = tickPricesRecord
 					}
-					recordMessage.Value = tickPricesRecord
 				case "trade":
 					var tradesRecord TradesRecord
 					if err := json.Unmarshal(streamRecord.Data, &tradesRecord); err != nil {
 						recordMessage.Err = fmt.Errorf("unable to unmarshal trades record: %w", err)
-						recordChan <- recordMessage
-						return
+					} else {
+						recordMessage.Value = tradesRecord
 					}
-					recordMessage.Value = tradesRecord
 				case "tradeStatus":
 					var tradeStatusRecord TradeStatusRecord
 					if err := json.Unmarshal(streamRecord.Data, &tradeStatusRecord); err != nil {
 						recordMessage.Err = fmt.Errorf("unable to unmarshal trade status record: %w", err)
-						recordChan <- recordMessage
-						return
+					} else {
+						recordMessage.Value = tradeStatusRecord
 					}
-					recordMessage.Value = tradeStatusRecord
 				default:
 					recordMessage.Err = fmt.Errorf("invalid command: %s", streamRecord.Command)
-					recordChan <- recordMessage
-					return
 				}
 
 				recordChan <- recordMessage
@@ -422,11 +415,22 @@ func (c *StreamClient) Listen(ctx context.Context) <-chan RecordMessage {
 	return recordChan
 }
 
-func (c *StreamClient) write(data []byte) error {
+func (c *StreamClient) write(ctx context.Context, data []byte) error {
 
-	if err := c.conn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return fmt.Errorf("failed to write: %w", err)
+	errChan := make(chan error, 1)
+
+	go func() {
+		defer close(errChan)
+		if err := c.conn.WriteMessage(websocket.TextMessage, data); err != nil {
+			errChan <- fmt.Errorf("failed to write: %w", err)
+			return
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-errChan:
+		return err
 	}
-
-	return nil
 }
