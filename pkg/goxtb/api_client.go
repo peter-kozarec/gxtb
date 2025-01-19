@@ -7,30 +7,29 @@ import (
 )
 
 type ApiClient struct {
-	conn wsConn
+	conn *Conn
 	url  string
 }
 
 func NewApiClient() *ApiClient {
 	return &ApiClient{
-		conn: new(wsConnImpl),
-		url:  "wss://ws.xtb.com/real",
+		url: "wss://ws.xtb.com/real",
 	}
 }
 
 func NewApiDemoClient() *ApiClient {
 	return &ApiClient{
-		conn: new(wsConnImpl),
-		url:  "wss://ws.xtb.com/demo",
+		url: "wss://ws.xtb.com/demo",
 	}
 }
 
-func (c *ApiClient) Connect() error {
-	return c.conn.connect(c.url)
+func (c *ApiClient) Connect(ctx context.Context) (err error) {
+	c.conn, err = Dial(ctx, c.url)
+	return err
 }
 
-func (c *ApiClient) Disconnect() {
-	c.conn.disconnect()
+func (c *ApiClient) Disconnect() error {
+	return c.conn.Close()
 }
 
 func (c *ApiClient) Login(ctx context.Context, r LoginRequest) (sessionId string, err error) {
@@ -40,11 +39,11 @@ func (c *ApiClient) Login(ctx context.Context, r LoginRequest) (sessionId string
 		return "", fmt.Errorf("")
 	}
 
-	if err := c.conn.write(ctx, request); err != nil {
+	if err := c.conn.Write(ctx, request); err != nil {
 		return "", fmt.Errorf("login request: %w", err)
 	}
 
-	response, err := c.conn.read(ctx)
+	response, err := c.conn.Read(ctx)
 	if err != nil {
 		return "", fmt.Errorf("login response: %w", err)
 	}

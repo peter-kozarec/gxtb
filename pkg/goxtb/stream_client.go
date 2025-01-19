@@ -20,7 +20,7 @@ type streamRecord struct {
 }
 
 type StreamClient struct {
-	conn wsConn
+	conn *Conn
 	url  string
 
 	StreamSessionId string
@@ -28,24 +28,23 @@ type StreamClient struct {
 
 func NewStreamClient() *StreamClient {
 	return &StreamClient{
-		conn: new(wsConnImpl),
-		url:  "wss://ws.xtb.com/realStream",
+		url: "wss://ws.xtb.com/realStream",
 	}
 }
 
 func NewStreamDemoClient() *StreamClient {
 	return &StreamClient{
-		conn: new(wsConnImpl),
-		url:  "wss://ws.xtb.com/demoStream",
+		url: "wss://ws.xtb.com/demoStream",
 	}
 }
 
-func (c *StreamClient) Connect() error {
-	return c.conn.connect(c.url)
+func (c *StreamClient) Connect(ctx context.Context) (err error) {
+	c.conn, err = Dial(ctx, c.url)
+	return err
 }
 
 func (c *StreamClient) Disconnect() error {
-	return c.conn.disconnect()
+	return c.conn.Close()
 }
 
 func (c *StreamClient) GetBalance(ctx context.Context) error {
@@ -60,7 +59,7 @@ func (c *StreamClient) GetBalance(ctx context.Context) error {
 		return fmt.Errorf("failed to marshal getBalance: %w", err)
 	}
 
-	return c.conn.write(ctx, data)
+	return c.conn.Write(ctx, data)
 }
 
 func (c *StreamClient) StopBalance(ctx context.Context) error {
@@ -74,7 +73,7 @@ func (c *StreamClient) StopBalance(ctx context.Context) error {
 		return fmt.Errorf("failed to marshal stopBalance: %w", err)
 	}
 
-	return c.conn.write(ctx, data)
+	return c.conn.Write(ctx, data)
 }
 
 func (c *StreamClient) GetCandles(ctx context.Context, symbol string) error {
@@ -90,7 +89,7 @@ func (c *StreamClient) GetCandles(ctx context.Context, symbol string) error {
 		return fmt.Errorf("failed to marshal getCandles: %w", err)
 	}
 
-	return c.conn.write(ctx, data)
+	return c.conn.Write(ctx, data)
 }
 
 func (c *StreamClient) StopCandles(ctx context.Context, symbol string) error {
@@ -105,7 +104,7 @@ func (c *StreamClient) StopCandles(ctx context.Context, symbol string) error {
 		return fmt.Errorf("failed to marshal stopCandles: %w", err)
 	}
 
-	return c.conn.write(ctx, data)
+	return c.conn.Write(ctx, data)
 }
 
 func (c *StreamClient) GetKeepAlive(ctx context.Context) error {
@@ -120,7 +119,7 @@ func (c *StreamClient) GetKeepAlive(ctx context.Context) error {
 		return fmt.Errorf("failed to marshal getKeepAlive: %w", err)
 	}
 
-	return c.conn.write(ctx, data)
+	return c.conn.Write(ctx, data)
 }
 
 func (c *StreamClient) StopKeepAlive(ctx context.Context) error {
@@ -134,7 +133,7 @@ func (c *StreamClient) StopKeepAlive(ctx context.Context) error {
 		return fmt.Errorf("failed to marshal stopKeepAlive: %w", err)
 	}
 
-	return c.conn.write(ctx, data)
+	return c.conn.Write(ctx, data)
 }
 
 func (c *StreamClient) GetNews(ctx context.Context) error {
@@ -149,7 +148,7 @@ func (c *StreamClient) GetNews(ctx context.Context) error {
 		return fmt.Errorf("failed to marshal getNews: %w", err)
 	}
 
-	return c.conn.write(ctx, data)
+	return c.conn.Write(ctx, data)
 }
 
 func (c *StreamClient) StopNews(ctx context.Context) error {
@@ -163,7 +162,7 @@ func (c *StreamClient) StopNews(ctx context.Context) error {
 		return fmt.Errorf("failed to marshal stopNews: %w", err)
 	}
 
-	return c.conn.write(ctx, data)
+	return c.conn.Write(ctx, data)
 }
 
 func (c *StreamClient) GetProfits(ctx context.Context) error {
@@ -178,7 +177,7 @@ func (c *StreamClient) GetProfits(ctx context.Context) error {
 		return fmt.Errorf("failed to marshal getProfits: %w", err)
 	}
 
-	return c.conn.write(ctx, data)
+	return c.conn.Write(ctx, data)
 }
 
 func (c *StreamClient) StopProfits(ctx context.Context) error {
@@ -192,7 +191,7 @@ func (c *StreamClient) StopProfits(ctx context.Context) error {
 		return fmt.Errorf("failed to marshal stopProfits: %w", err)
 	}
 
-	return c.conn.write(ctx, data)
+	return c.conn.Write(ctx, data)
 }
 
 func (c *StreamClient) GetTickPrices(ctx context.Context, symbol string, minArrivalTime, maxLevel int) error {
@@ -210,7 +209,7 @@ func (c *StreamClient) GetTickPrices(ctx context.Context, symbol string, minArri
 		return fmt.Errorf("failed to marshal getTickPrices: %w", err)
 	}
 
-	return c.conn.write(ctx, data)
+	return c.conn.Write(ctx, data)
 }
 
 func (c *StreamClient) StopTickPrices(ctx context.Context, symbol string) error {
@@ -225,7 +224,7 @@ func (c *StreamClient) StopTickPrices(ctx context.Context, symbol string) error 
 		return fmt.Errorf("failed to marshal stopTickPrices: %w", err)
 	}
 
-	return c.conn.write(ctx, data)
+	return c.conn.Write(ctx, data)
 }
 
 func (c *StreamClient) GetTrades(ctx context.Context) error {
@@ -240,7 +239,7 @@ func (c *StreamClient) GetTrades(ctx context.Context) error {
 		return fmt.Errorf("failed to marshal getTrades: %w", err)
 	}
 
-	return c.conn.write(ctx, data)
+	return c.conn.Write(ctx, data)
 }
 
 func (c *StreamClient) StopTrades(ctx context.Context) error {
@@ -254,7 +253,7 @@ func (c *StreamClient) StopTrades(ctx context.Context) error {
 		return fmt.Errorf("failed to marshal stopTrades: %w", err)
 	}
 
-	return c.conn.write(ctx, data)
+	return c.conn.Write(ctx, data)
 }
 
 func (c *StreamClient) GetTradeStatus(ctx context.Context) error {
@@ -269,7 +268,7 @@ func (c *StreamClient) GetTradeStatus(ctx context.Context) error {
 		return fmt.Errorf("failed to marshal getTradeStatus: %w", err)
 	}
 
-	return c.conn.write(ctx, data)
+	return c.conn.Write(ctx, data)
 }
 
 func (c *StreamClient) StopTradeStatus(ctx context.Context) error {
@@ -283,7 +282,7 @@ func (c *StreamClient) StopTradeStatus(ctx context.Context) error {
 		return fmt.Errorf("failed to marshal stopTradeStatus: %w", err)
 	}
 
-	return c.conn.write(ctx, data)
+	return c.conn.Write(ctx, data)
 }
 
 func (c *StreamClient) Ping(ctx context.Context) error {
@@ -298,7 +297,7 @@ func (c *StreamClient) Ping(ctx context.Context) error {
 		return fmt.Errorf("failed to marshal ping: %w", err)
 	}
 
-	return c.conn.write(ctx, data)
+	return c.conn.Write(ctx, data)
 }
 
 func (c *StreamClient) Listen(ctx context.Context) <-chan RecordMessage {
@@ -314,7 +313,7 @@ func (c *StreamClient) Listen(ctx context.Context) <-chan RecordMessage {
 			default:
 				recordMessage := RecordMessage{}
 
-				rawBytes, err := c.conn.read(ctx)
+				rawBytes, err := c.conn.Read(ctx)
 				if err != nil {
 					recordMessage.Err = fmt.Errorf("error reading message: %v", err)
 					recordChan <- recordMessage
