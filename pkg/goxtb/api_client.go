@@ -6,6 +6,11 @@ import (
 	"fmt"
 )
 
+type apiResponse struct {
+	Status     bool            `json:"status"`
+	ReturnData json.RawMessage `json:"returnData"`
+}
+
 type ApiClient struct {
 	conn *Conn
 	url  string
@@ -49,6 +54,60 @@ func (c *ApiClient) Login(ctx context.Context, r LoginRequest) (sessionId string
 	}
 
 	return parseLoginResponse(response)
+}
+
+func (c *ApiClient) GetAllSymbols(ctx context.Context) (symbolRecords []SymbolRecord, err error) {
+
+	if err = c.conn.Write(ctx, []byte("{\"command\":\"getAllSymbols\"}")); err != nil {
+		return symbolRecords, fmt.Errorf("GetAllSymbols request: %w", err)
+	}
+
+	responseData, err := c.conn.Read(ctx)
+	if err != nil {
+		return symbolRecords, fmt.Errorf("GetAllSymbols response: %w", err)
+	}
+
+	var response apiResponse
+	if err = json.Unmarshal(responseData, &response); err != nil {
+		return symbolRecords, fmt.Errorf("GetAllSymbols response unmarshal: %w", err)
+	}
+
+	if response.ReturnData == nil {
+		return symbolRecords, fmt.Errorf("GetAllSymbols response does not contain returnData")
+	}
+
+	if err = json.Unmarshal(response.ReturnData, &symbolRecords); err != nil {
+		return symbolRecords, fmt.Errorf("GetAllSymbols response unmarshal: %w", err)
+	}
+
+	return symbolRecords, err
+}
+
+func (c *ApiClient) GetCalendar(ctx context.Context) (calendarRecords []CalendarRecord, err error) {
+
+	if err = c.conn.Write(ctx, []byte("{\"command\":\"getCalendar\"}")); err != nil {
+		return calendarRecords, fmt.Errorf("GetCalendar request: %w", err)
+	}
+
+	responseData, err := c.conn.Read(ctx)
+	if err != nil {
+		return calendarRecords, fmt.Errorf("GetCalendar response: %w", err)
+	}
+
+	var response apiResponse
+	if err = json.Unmarshal(responseData, &response); err != nil {
+		return calendarRecords, fmt.Errorf("GetCalendar response unmarshal: %w", err)
+	}
+
+	if response.ReturnData == nil {
+		return calendarRecords, fmt.Errorf("GetCalendar response does not contain returnData")
+	}
+
+	if err = json.Unmarshal(response.ReturnData, &calendarRecords); err != nil {
+		return calendarRecords, fmt.Errorf("GetCalendar response unmarshal: %w", err)
+	}
+
+	return calendarRecords, err
 }
 
 func createLoginRequest(r LoginRequest) ([]byte, error) {
