@@ -1,4 +1,4 @@
-package goxtb
+package gxtb
 
 import (
 	"context"
@@ -82,4 +82,18 @@ func (c *Conn) Read(ctx context.Context) ([]byte, error) {
 	case data := <-dataChan:
 		return data, nil
 	}
+}
+
+func (c *Conn) WriteRead(ctx context.Context, data []byte) ([]byte, error) {
+
+	if err := c.Write(ctx, data); err != nil {
+		return nil, fmt.Errorf("failed to write request: %w", err)
+	}
+
+	response, err := c.Read(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	return response, nil
 }

@@ -1,23 +1,4 @@
-package goxtb
-
-import "encoding/json"
-
-type ApiRequest struct {
-	Command   string          `json:"command"`
-	Arguments json.RawMessage `json:"arguments"`
-}
-
-type LoginRequest struct {
-	UserId   string `json:"userId"`
-	Password string `json:"password"`
-	AppId    string `json:"appId"`
-	AppName  string `json:"appName"`
-}
-
-type LoginResponse struct {
-	Status          bool   `json:"status"`
-	StreamSessionId string `json:"streamSessionId"`
-}
+package gxtb
 
 type SymbolRecord struct {
 	Ask                float64  `json:"ask"`
@@ -76,6 +57,20 @@ type CalendarRecord struct {
 	Previous string `json:"previous"`
 	Time     int64  `json:"time"`
 	Title    string `json:"title"`
+}
+
+type ChartLastRequest struct {
+	Period int    `json:"period"`
+	Start  int64  `json:"start"`
+	Symbol string `json:"symbol"`
+}
+
+type ChartRangeRequest struct {
+	End    int64  `json:"end"`
+	Period int    `json:"period"`
+	Start  int64  `json:"start"`
+	Symbol string `json:"symbol"`
+	Ticks  int    `json:"ticks"`
 }
 
 type RateInfo struct {

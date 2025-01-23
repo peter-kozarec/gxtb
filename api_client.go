@@ -1,4 +1,4 @@
-package goxtb
+package gxtb
 
 import (
 	"context"
@@ -6,9 +6,16 @@ import (
 	"fmt"
 )
 
-type apiResponse struct {
-	Status     bool            `json:"status"`
-	ReturnData json.RawMessage `json:"returnData"`
+type loginRequest struct {
+	UserId   string `json:"userId"`
+	Password string `json:"password"`
+	AppId    string `json:"appId"`
+	AppName  string `json:"appName"`
+}
+
+type loginResponse struct {
+	Status          bool   `json:"status"`
+	StreamSessionId string `json:"streamSessionId"`
 }
 
 type ApiClient struct {
@@ -28,113 +35,150 @@ func NewApiDemoClient() *ApiClient {
 	}
 }
 
-func (c *ApiClient) Connect(ctx context.Context) (err error) {
+func (c *ApiClient) Connect(ctx context.Context) error {
+	var err error
 	c.conn, err = Dial(ctx, c.url)
-	return err
+	if err != nil {
+		return fmt.Errorf("failed to connect to API server at %s: %w", c.url, err)
+	}
+	return nil
 }
 
 func (c *ApiClient) Disconnect() error {
-	return c.conn.Close()
+	if err := c.conn.Close(); err != nil {
+		return fmt.Errorf("failed to disconnect from API server: %w", err)
+	}
+	return nil
 }
 
-func (c *ApiClient) Login(ctx context.Context, r LoginRequest) (sessionId string, err error) {
+func (c *ApiClient) Login(ctx context.Context, userId, password, appId string) (string, error) {
 
-	request, err := createLoginRequest(r)
+	requestData, err := marshalRequest("login", loginRequest{
+		UserId:   userId,
+		Password: password,
+		AppId:    appId,
+	})
 	if err != nil {
-		return "", fmt.Errorf("")
+		return "", fmt.Errorf("failed to serialize API request for login: %w", err)
 	}
 
-	if err := c.conn.Write(ctx, request); err != nil {
-		return "", fmt.Errorf("login request: %w", err)
-	}
-
-	response, err := c.conn.Read(ctx)
+	responseData, err := c.conn.WriteRead(ctx, requestData)
 	if err != nil {
-		return "", fmt.Errorf("login response: %w", err)
+		return "", fmt.Errorf("failed to read login response: %w", err)
 	}
 
-	return parseLoginResponse(response)
-}
-
-func (c *ApiClient) GetAllSymbols(ctx context.Context) (symbolRecords []SymbolRecord, err error) {
-
-	if err = c.conn.Write(ctx, []byte("{\"command\":\"getAllSymbols\"}")); err != nil {
-		return symbolRecords, fmt.Errorf("GetAllSymbols request: %w", err)
+	resp := loginResponse{}
+	if err := json.Unmarshal(responseData, &resp); err != nil {
+		return "", fmt.Errorf("failed to parse login response JSON: %w", err)
 	}
 
-	responseData, err := c.conn.Read(ctx)
-	if err != nil {
-		return symbolRecords, fmt.Errorf("GetAllSymbols response: %w", err)
-	}
-
-	var response apiResponse
-	if err = json.Unmarshal(responseData, &response); err != nil {
-		return symbolRecords, fmt.Errorf("GetAllSymbols response unmarshal: %w", err)
-	}
-
-	if response.ReturnData == nil {
-		return symbolRecords, fmt.Errorf("GetAllSymbols response does not contain returnData")
-	}
-
-	if err = json.Unmarshal(response.ReturnData, &symbolRecords); err != nil {
-		return symbolRecords, fmt.Errorf("GetAllSymbols response unmarshal: %w", err)
-	}
-
-	return symbolRecords, err
-}
-
-func (c *ApiClient) GetCalendar(ctx context.Context) (calendarRecords []CalendarRecord, err error) {
-
-	if err = c.conn.Write(ctx, []byte("{\"command\":\"getCalendar\"}")); err != nil {
-		return calendarRecords, fmt.Errorf("GetCalendar request: %w", err)
-	}
-
-	responseData, err := c.conn.Read(ctx)
-	if err != nil {
-		return calendarRecords, fmt.Errorf("GetCalendar response: %w", err)
-	}
-
-	var response apiResponse
-	if err = json.Unmarshal(responseData, &response); err != nil {
-		return calendarRecords, fmt.Errorf("GetCalendar response unmarshal: %w", err)
-	}
-
-	if response.ReturnData == nil {
-		return calendarRecords, fmt.Errorf("GetCalendar response does not contain returnData")
-	}
-
-	if err = json.Unmarshal(response.ReturnData, &calendarRecords); err != nil {
-		return calendarRecords, fmt.Errorf("GetCalendar response unmarshal: %w", err)
-	}
-
-	return calendarRecords, err
-}
-
-func createLoginRequest(r LoginRequest) ([]byte, error) {
-
-	arguments, err := json.Marshal(r)
-	if err != nil {
-		return []byte{}, fmt.Errorf("failed to marshal login request arguments: %w", err)
-	}
-
-	request := ApiRequest{Command: "login", Arguments: arguments}
-	requestData, err := json.Marshal(request)
-	if err != nil {
-		return []byte{}, fmt.Errorf("failed to marshal API request: %w", err)
-	}
-	return requestData, nil
-}
-
-func parseLoginResponse(responseData []byte) (sessionId string, err error) {
-
-	var r LoginResponse
-	if err := json.Unmarshal(responseData, &r); err != nil {
-		return "", fmt.Errorf("failed to unmarshal login response: %w", err)
-	}
-
-	if !r.Status {
+	if !resp.Status {
 		return "", fmt.Errorf("login failed with response: %s", string(responseData))
 	}
 
-	return r.StreamSessionId, nil
+	return resp.StreamSessionId, nil
+}
+
+func (c *ApiClient) Logout(ctx context.Context) error {
+
+	requestData, err := marshalRequest("logout", nil)
+	if err != nil {
+		return fmt.Errorf("failed to serialize API request for logout: %w", err)
+	}
+
+	responseData, err := c.conn.WriteRead(ctx, requestData)
+	if err != nil {
+		return fmt.Errorf("failed to read logout response: %w", err)
+	}
+
+	if err := unmarshalResponse(responseData, nil); err != nil {
+		return fmt.Errorf("unable to unmarshal logout response: %w", err)
+	}
+
+	return nil
+
+}
+
+func (c *ApiClient) GetAllSymbols(ctx context.Context) ([]SymbolRecord, error) {
+
+	var symbolRecords []SymbolRecord
+
+	requestData, err := marshalRequest("getAllSymbols", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal GetAllSymbols request: %w", err)
+	}
+
+	responseData, err := c.conn.WriteRead(ctx, requestData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to perform GetAllSymbols: %w", err)
+	}
+
+	if err := unmarshalResponse(responseData, &symbolRecords); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal GetAllSymbols response: %w", err)
+	}
+
+	return symbolRecords, nil
+}
+
+func (c *ApiClient) GetCalendar(ctx context.Context) ([]CalendarRecord, error) {
+
+	var calendarRecords []CalendarRecord
+
+	requestData, err := marshalRequest("getCalendar", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal GetCalendar request: %w", err)
+	}
+
+	responseData, err := c.conn.WriteRead(ctx, requestData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to perform GetCalendar: %w", err)
+	}
+
+	if err := unmarshalResponse(responseData, &calendarRecords); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal GetCalendar response: %w", err)
+	}
+
+	return calendarRecords, nil
+}
+
+func (c *ApiClient) GetChartLastRequest(ctx context.Context, req ChartLastRequest) ([]RateInfo, error) {
+
+	var rates []RateInfo
+
+	requestData, err := marshalRequest("getChartLastRequest", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal GetChartLastRequest request: %w", err)
+	}
+
+	responseData, err := c.conn.WriteRead(ctx, requestData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to perform GetChartLastRequest: %w", err)
+	}
+
+	if err := unmarshalResponse(responseData, &rates); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal GetChartLastRequest response: %w", err)
+	}
+
+	return rates, nil
+}
+
+func (c *ApiClient) GetChartRangeRequest(ctx context.Context, req ChartRangeRequest) ([]RateInfo, error) {
+
+	var rates []RateInfo
+
+	requestData, err := marshalRequest("getChartRangeRequest", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal GetChartRangeRequest request: %w", err)
+	}
+
+	responseData, err := c.conn.WriteRead(ctx, requestData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to perform GetChartRangeRequest: %w", err)
+	}
+
+	if err := unmarshalResponse(responseData, &rates); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal GetChartRangeRequest response: %w", err)
+	}
+
+	return rates, nil
 }

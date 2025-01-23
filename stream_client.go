@@ -1,4 +1,4 @@
-package goxtb
+package gxtb
 
 import (
 	"context"
