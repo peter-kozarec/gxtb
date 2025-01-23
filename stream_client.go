@@ -300,9 +300,9 @@ func (c *StreamClient) Ping(ctx context.Context) error {
 	return c.conn.Write(ctx, data)
 }
 
-func (c *StreamClient) Listen(ctx context.Context) <-chan RecordMessage {
+func (c *StreamClient) Listen(ctx context.Context) <-chan StreamMessage {
 
-	recordChan := make(chan RecordMessage)
+	recordChan := make(chan StreamMessage)
 
 	go func() {
 		defer close(recordChan)
@@ -311,7 +311,7 @@ func (c *StreamClient) Listen(ctx context.Context) <-chan RecordMessage {
 			case <-ctx.Done():
 				return
 			default:
-				recordMessage := RecordMessage{}
+				recordMessage := StreamMessage{}
 
 				rawBytes, err := c.conn.Read(ctx)
 				if err != nil {

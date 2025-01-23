@@ -1,6 +1,6 @@
 package gxtb
 
-type RecordMessage struct {
+type StreamMessage struct {
 	Value interface{}
 	Err   error
 }
