@@ -6,18 +6,6 @@ import (
 	"fmt"
 )
 
-type loginRequest struct {
-	UserId   string `json:"userId"`
-	Password string `json:"password"`
-	AppId    string `json:"appId"`
-	AppName  string `json:"appName"`
-}
-
-type loginResponse struct {
-	Status          bool   `json:"status"`
-	StreamSessionId string `json:"streamSessionId"`
-}
-
 type ApiClient struct {
 	conn *Conn
 	url  string
@@ -51,32 +39,25 @@ func (c *ApiClient) Disconnect() error {
 	return nil
 }
 
-func (c *ApiClient) Login(ctx context.Context, userId, password, appId string) (string, error) {
+func (c *ApiClient) Login(ctx context.Context, req LoginRequest) (LoginResponse, error) {
 
-	requestData, err := marshalRequest("login", loginRequest{
-		UserId:   userId,
-		Password: password,
-		AppId:    appId,
-	})
+	var loginResponse LoginResponse
+
+	requestData, err := marshalRequest("login", req)
 	if err != nil {
-		return "", fmt.Errorf("failed to serialize API request for login: %w", err)
+		return loginResponse, fmt.Errorf("failed to serialize API request for login: %w", err)
 	}
 
 	responseData, err := c.conn.WriteRead(ctx, requestData)
 	if err != nil {
-		return "", fmt.Errorf("failed to read login response: %w", err)
+		return loginResponse, fmt.Errorf("failed to read login response: %w", err)
 	}
 
-	resp := loginResponse{}
-	if err := json.Unmarshal(responseData, &resp); err != nil {
-		return "", fmt.Errorf("failed to parse login response JSON: %w", err)
+	if err := json.Unmarshal(responseData, &loginResponse); err != nil {
+		return loginResponse, fmt.Errorf("failed to parse login response JSON: %w", err)
 	}
 
-	if !resp.Status {
-		return "", fmt.Errorf("login failed with response: %s", string(responseData))
-	}
-
-	return resp.StreamSessionId, nil
+	return loginResponse, nil
 }
 
 func (c *ApiClient) Logout(ctx context.Context) error {
@@ -141,9 +122,9 @@ func (c *ApiClient) GetCalendar(ctx context.Context) ([]CalendarRecord, error) {
 	return calendarRecords, nil
 }
 
-func (c *ApiClient) GetChartLastRequest(ctx context.Context, req ChartLastRequest) ([]RateInfo, error) {
+func (c *ApiClient) GetChartLastRequest(ctx context.Context, req ChartLastRequest) ([]RateInfoRecord, error) {
 
-	var rates []RateInfo
+	var rates []RateInfoRecord
 
 	requestData, err := marshalRequest("getChartLastRequest", nil)
 	if err != nil {
@@ -162,9 +143,9 @@ func (c *ApiClient) GetChartLastRequest(ctx context.Context, req ChartLastReques
 	return rates, nil
 }
 
-func (c *ApiClient) GetChartRangeRequest(ctx context.Context, req ChartRangeRequest) ([]RateInfo, error) {
+func (c *ApiClient) GetChartRangeRequest(ctx context.Context, req ChartRangeRequest) ([]RateInfoRecord, error) {
 
-	var rates []RateInfo
+	var rates []RateInfoRecord
 
 	requestData, err := marshalRequest("getChartRangeRequest", nil)
 	if err != nil {
@@ -181,4 +162,67 @@ func (c *ApiClient) GetChartRangeRequest(ctx context.Context, req ChartRangeRequ
 	}
 
 	return rates, nil
+}
+
+func (c *ApiClient) GetCommissionDef(ctx context.Context, req CommissionRequest) (CommissionData, error) {
+
+	var commissionData CommissionData
+
+	requestData, err := marshalRequest("getCommissionDef", nil)
+	if err != nil {
+		return commissionData, fmt.Errorf("failed to marshal GetCommissionDef request: %w", err)
+	}
+
+	responseData, err := c.conn.WriteRead(ctx, requestData)
+	if err != nil {
+		return commissionData, fmt.Errorf("failed to perform GetCommissionDef: %w", err)
+	}
+
+	if err := unmarshalResponse(responseData, &commissionData); err != nil {
+		return commissionData, fmt.Errorf("unable to unmarshal GetCommissionDef response: %w", err)
+	}
+
+	return commissionData, nil
+}
+
+func (c *ApiClient) GetCurrentUserData(ctx context.Context) (UserData, error) {
+
+	var userData UserData
+
+	requestData, err := marshalRequest("getCurrentUserData", nil)
+	if err != nil {
+		return userData, fmt.Errorf("failed to marshal GetCurrentUserData request: %w", err)
+	}
+
+	responseData, err := c.conn.WriteRead(ctx, requestData)
+	if err != nil {
+		return userData, fmt.Errorf("failed to perform GetCurrentUserData: %w", err)
+	}
+
+	if err := unmarshalResponse(responseData, &userData); err != nil {
+		return userData, fmt.Errorf("unable to unmarshal GetCurrentUserData response: %w", err)
+	}
+
+	return userData, nil
+}
+
+func (c *ApiClient) GetMarginLevel(ctx context.Context) (MarginData, error) {
+
+	var marginData MarginData
+
+	requestData, err := marshalRequest("getMarginLevel", nil)
+	if err != nil {
+		return marginData, fmt.Errorf("failed to marshal GetMarginLevel request: %w", err)
+	}
+
+	responseData, err := c.conn.WriteRead(ctx, requestData)
+	if err != nil {
+		return marginData, fmt.Errorf("failed to perform GetMarginLevel: %w", err)
+	}
+
+	if err := unmarshalResponse(responseData, &marginData); err != nil {
+		return marginData, fmt.Errorf("unable to unmarshal GetMarginLevel response: %w", err)
+	}
+
+	return marginData, nil
 }

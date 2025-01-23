@@ -1,5 +1,17 @@
 package gxtb
 
+type LoginRequest struct {
+	UserId   string `json:"userId"`
+	Password string `json:"password"`
+	AppId    string `json:"appId"`
+	AppName  string `json:"appName"`
+}
+
+type LoginResponse struct {
+	Status          bool   `json:"status"`
+	StreamSessionId string `json:"streamSessionId"`
+}
+
 type SymbolRecord struct {
 	Ask                float64  `json:"ask"`
 	Bid                float64  `json:"bid"`
@@ -73,7 +85,7 @@ type ChartRangeRequest struct {
 	Ticks  int    `json:"ticks"`
 }
 
-type RateInfo struct {
+type RateInfoRecord struct {
 	Close     float64 `json:"close"`
 	Ctm       int64   `json:"ctm"`
 	CtmString string  `json:"ctmString"`
@@ -83,7 +95,12 @@ type RateInfo struct {
 	Vol       float64 `json:"vol"`
 }
 
-type CommissionInfo struct {
+type CommissionRequest struct {
+	Symbol string  `json:"symbol"`
+	Volume float32 `json:"volume"`
+}
+
+type CommissionData struct {
 	Commission     float32 `json:"commission"`
 	RateOfExchange float32 `json:"rateOfExchange"`
 }
@@ -99,7 +116,7 @@ type UserData struct {
 	TrailingStop       bool    `json:"trailingStop"`
 }
 
-type MarginInfo struct {
+type MarginData struct {
 	Balance     float64 `json:"balance"`
 	Credit      float64 `json:"credit"`
 	Currency    string  `json:"currency"`
