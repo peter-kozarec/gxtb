@@ -1,4 +1,4 @@
-module peter-kozarec/goxtb
+module peter-kozarec/gxtb
 
 go 1.23.4
 
