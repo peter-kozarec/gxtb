@@ -266,11 +266,14 @@ func (c *StreamClient) Listen(ctx context.Context) error {
 		}
 	}()
 
+	ticker := time.NewTicker(c.opts.KeepAliveInterval)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(c.opts.KeepAliveInterval):
+		case <-ticker.C:
 			c.Ping(ctx)
 		case resp := <-commChan:
 			if resp.err == nil {

@@ -73,15 +73,20 @@ func (c *ApiClient) Login(ctx context.Context, userId, password, appName string)
 		return "", fmt.Errorf("unable to process login api call: %w", err)
 	}
 
-	ctx, c.keepAliveCncl = context.WithCancel(ctx)
+	// Important to defer logout wich cancel's this goroutine
+	// ToDo: Not good refector later
+	ctx, c.keepAliveCncl = context.WithCancel(context.Background())
 
 	// Orphan goroutine to refresh connection, until canceled
 	go func() {
+		ticker := time.NewTicker(c.opts.KeepAliveInterval)
+		defer ticker.Stop()
+
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case <-time.After(c.opts.KeepAliveInterval):
+			case <-ticker.C:
 				c.Ping(ctx)
 			default:
 				time.Sleep(c.opts.PollingInterval)
