@@ -1,18 +1,15 @@
 package gxtb
 
-type LoginRequest struct {
-	UserId   string `json:"userId"`
-	Password string `json:"password"`
-	AppId    string `json:"appId"`
-	AppName  string `json:"appName"`
-}
+type RequestStatus int
 
-type LoginResponse struct {
-	Status          bool   `json:"status"`
-	StreamSessionId string `json:"streamSessionId"`
-}
+const (
+	REQUEST_STATUS_ERROR RequestStatus = iota
+	REQUEST_STATUS_PENDING
+	REQUEST_STATUS_ACCEPTED
+	REQUEST_STATUS_REJECTED
+)
 
-type SymbolRecord struct {
+type SymbolInfo struct {
 	Ask                float64  `json:"ask"`
 	Bid                float64  `json:"bid"`
 	CategoryName       string   `json:"categoryName"`
@@ -60,7 +57,7 @@ type SymbolRecord struct {
 	Type               int      `json:"type"`
 }
 
-type CalendarRecord struct {
+type Calendar struct {
 	Country  string `json:"country"`
 	Current  string `json:"current"`
 	Forecast string `json:"forecast"`
@@ -71,21 +68,7 @@ type CalendarRecord struct {
 	Title    string `json:"title"`
 }
 
-type ChartLastRequest struct {
-	Period int    `json:"period"`
-	Start  int64  `json:"start"`
-	Symbol string `json:"symbol"`
-}
-
-type ChartRangeRequest struct {
-	End    int64  `json:"end"`
-	Period int    `json:"period"`
-	Start  int64  `json:"start"`
-	Symbol string `json:"symbol"`
-	Ticks  int    `json:"ticks"`
-}
-
-type RateInfoRecord struct {
+type RateInfo struct {
 	Close     float64 `json:"close"`
 	Ctm       int64   `json:"ctm"`
 	CtmString string  `json:"ctmString"`
@@ -95,14 +78,14 @@ type RateInfoRecord struct {
 	Vol       float64 `json:"vol"`
 }
 
-type CommissionRequest struct {
-	Symbol string  `json:"symbol"`
-	Volume float32 `json:"volume"`
+type ChartData struct {
+	Digits    int        `json:"digits"`
+	RateInfos []RateInfo `json:"rateInfos"`
 }
 
 type CommissionData struct {
-	Commission     float32 `json:"commission"`
-	RateOfExchange float32 `json:"rateOfExchange"`
+	Commission     float64 `json:"commission"`
+	RateOfExchange float64 `json:"rateOfExchange"`
 }
 
 type UserData struct {
@@ -124,4 +107,74 @@ type MarginData struct {
 	Margin      float64 `json:"margin"`
 	MarginFree  float64 `json:"margin_free"`
 	MarginLevel float64 `json:"margin_level"`
+}
+
+type NewsTopic struct {
+	Body       string `json:"body"`
+	BodyLen    int    `json:"bodyLen"`
+	Key        string `json:"key"`
+	Time       int    `json:"time"`
+	TimeString string `json:"timeString"`
+	Title      string `json:"title"`
+}
+
+type ServerTime struct {
+	Time       int64  `json:"time"`
+	TimeString string `json:"timeString"`
+}
+
+type TickRecord struct {
+	Ask         float64 `json:"ask"`
+	AskVolume   int     `json:"askVolume"`
+	Bid         float64 `json:"bid"`
+	BidVolume   int     `json:"bidVolume"`
+	High        float64 `json:"high"`
+	Level       int     `json:"level"`
+	Low         float64 `json:"low"`
+	SpreadRaw   float64 `json:"spreadRaw"`
+	SpreadTable float64 `json:"spreadTable"`
+	Symbol      string  `json:"symbol"`
+	Timestamp   int64   `json:"timestamp"`
+}
+
+type TradeRecord struct {
+	ClosePrice       float64 `json:"close_price"`
+	CloseTime        *int64  `json:"close_time"`
+	CloseTimeString  *string `json:"close_timeString"`
+	Closed           bool    `json:"closed"`
+	Cmd              int     `json:"cmd"`
+	Comment          string  `json:"comment"`
+	Commission       float64 `json:"commission"`
+	CustomComment    string  `json:"customComment"`
+	Digits           int     `json:"digits"`
+	Expiration       *int64  `json:"expiration"`
+	ExpirationString *string `json:"expirationString"`
+	MarginRate       float64 `json:"margin_rate"`
+	Offset           int     `json:"offset"`
+	OpenPrice        float64 `json:"open_price"`
+	OpenTime         int64   `json:"open_time"`
+	OpenTimeString   string  `json:"open_timeString"`
+	Order            int     `json:"order"`
+	Order2           int     `json:"order2"`
+	Position         int     `json:"position"`
+	Profit           float64 `json:"profit"`
+	SL               float64 `json:"sl"`
+	Storage          float64 `json:"storage"`
+	Symbol           string  `json:"symbol"`
+	Timestamp        int64   `json:"timestamp"`
+	TP               float64 `json:"tp"`
+	Volume           float64 `json:"volume"`
+}
+
+type OrderId struct {
+	Id int `json:"order"`
+}
+
+type TransactionStatus struct {
+	Ask           float32       `json:"ask"`
+	Bid           float32       `json:"bid"`
+	CustomComment string        `json:"customComment"`
+	Message       *string       `json:"message"`
+	Order         int           `json:"order"`
+	RequestStatus RequestStatus `json:"requestStatus"`
 }
