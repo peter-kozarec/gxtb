@@ -36,8 +36,11 @@ func main() {
 	}
 	defer c.Disconnect()
 
+	userId := os.Getenv("XTB_UserId")
+	password := os.Getenv("XTB_Password")
+
 	// Login to API client
-	if _, err := c.Login(ctx, os.Getenv("XTB_UserId"), os.Getenv("XTB_Password"), "testApp"); err != nil {
+	if _, err := c.Login(ctx, userId, password, "testApp"); err != nil {
 		log.Fatalf("unable to login: %v", err)
 	}
 	defer c.Logout(ctx)
@@ -72,12 +75,8 @@ import (
 	"peter-kozarec/gxtb"
 )
 
-func tickPriceUpdate(tickPrice gxtb.TickPrice) {
+func tUpdates(tickPrice gxtb.TickPrice) {
 	log.Printf("Tick update - %v\n", tickPrice)
-}
-
-func keepAliveUpdate(keepAlive gxtb.KeepAlive) {
-	log.Printf("Keep alive update - %v\n", keepAlive)
 }
 
 func main() {
@@ -97,8 +96,11 @@ func main() {
 	}
 	defer streamClient.Disconnect()
 
+	userId := os.Getenv("XTB_UserId")
+	password := os.Getenv("XTB_Password")
+
 	// Login and retrieve stream session ID
-	streamSessionId, err := apiClient.Login(ctx, os.Getenv("XTB_UserId"), os.Getenv("XTB_Password"), "testApp")
+	streamSessionId, err := apiClient.Login(ctx, userId, password, "testApp")
 	if err != nil {
 		log.Fatalf("unable to login: %v", err)
 	}
@@ -107,13 +109,8 @@ func main() {
 	// Set stream session ID
 	streamClient.SetSessionId(streamSessionId)
 
-	// Subscribe to keep-alive updates
-	if err := streamClient.GetKeepAlive(ctx, keepAliveUpdate); err != nil {
-		log.Fatalf("unable to subscribe to keep-alive updates: %v", err)
-	}
-
 	// Subscribe to tick price updates
-	if err := streamClient.GetTickPrices(ctx, "BITCOIN", 100, 1, tickPriceUpdate); err != nil {
+	if err := streamClient.GetTickPrices(ctx, "BITCOIN", 100, 1, tUpdates); err != nil {
 		log.Fatalf("unable to subscribe to tick updates: %v", err)
 	}
 
@@ -129,8 +126,4 @@ func main() {
 ## License
 
 This project is licensed under the MIT License.
-
-## Author
-
-[Peter Kozarec](https://github.com/peter-kozarec)
 
