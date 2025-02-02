@@ -126,18 +126,9 @@ func main() {
 }
 ```
 
-## Features
-
-- Connect to the XTB API
-- Authenticate using credentials
-- Retrieve API version and server time
-- Stream real-time market data
-- Handle keep-alive events
-- Open, close and update trades
-
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+This project is licensed under the MIT License.
 
 ## Author
 
