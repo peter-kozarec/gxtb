@@ -7,7 +7,7 @@
 To install the package, run:
 
 ```sh
-go get github.com/peter-kozarec/gxtb
+go get -u github.com/peter-kozarec/gxtb@latest
 ```
 
 ## Usage
@@ -23,7 +23,7 @@ import (
 	"context"
 	"log"
 	"os"
-	"peter-kozarec/gxtb"
+	"github.com/peter-kozarec/gxtb"
 )
 
 func main() {
@@ -72,7 +72,7 @@ import (
 	"context"
 	"log"
 	"os"
-	"peter-kozarec/gxtb"
+	"github.com/peter-kozarec/gxtb"
 )
 
 func tUpdates(tickPrice gxtb.TickPrice) {
