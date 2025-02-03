@@ -4,7 +4,8 @@ import (
 	"context"
 	"log"
 	"os"
-	"peter-kozarec/gxtb"
+	
+	"github.com/peter-kozarec/gxtb"
 )
 
 func main() {
