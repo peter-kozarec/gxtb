@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sync"
 	"time"
 )
 
@@ -36,7 +35,6 @@ type StreamClient struct {
 	sessionId       string
 	opts            StreamOptions
 	listenCtxCancel context.CancelFunc
-	mu              sync.Mutex
 
 	balanceCb     GetBalanceCb
 	candlesCb     map[string]GetCandlesCb
@@ -71,9 +69,6 @@ func (c *StreamClient) Disconnect() error {
 	if c.listenCtxCancel != nil {
 		c.listenCtxCancel()
 	}
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
 
 	return c.disconnect()
 }
@@ -295,9 +290,6 @@ func (c *StreamClient) Listen(ctx context.Context) error {
 }
 
 func (c *StreamClient) sendCommand(ctx context.Context, cmd streamCommand) error {
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
 
 	data, err := json.Marshal(cmd)
 	if err != nil {
