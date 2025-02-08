@@ -6,17 +6,25 @@ import (
 	"net/url"
 
 	"github.com/gorilla/websocket"
+	"go.uber.org/zap"
 )
 
 type websocketConnection struct {
-	ws *websocket.Conn
+	ws     *websocket.Conn
+	url    string
+	logger *zap.Logger
+}
+
+func (c *websocketConnection) AttachLogger(logger *zap.Logger) {
+	c.logger = logger
 }
 
 func (c *websocketConnection) connect(ctx context.Context, url url.URL) error {
 
 	var err error
 
-	c.ws, _, err = websocket.DefaultDialer.DialContext(ctx, url.String(), nil)
+	c.url = url.String()
+	c.ws, _, err = websocket.DefaultDialer.DialContext(ctx, c.url, nil)
 	if err != nil {
 		return fmt.Errorf("unable to dial %v: %w", url, err)
 	}
@@ -36,6 +44,10 @@ func (c *websocketConnection) write(ctx context.Context, data []byte) error {
 	go func() {
 		err := c.ws.WriteMessage(websocket.TextMessage, data)
 		commChan <- goCommChan{nil, err}
+
+		if err == nil && c.logger != nil {
+			c.logger.Debug(c.url, zap.String("write", string(data)))
+		}
 	}()
 
 	select {
@@ -53,6 +65,10 @@ func (c *websocketConnection) read(ctx context.Context) ([]byte, error) {
 	go func() {
 		_, p, err := c.ws.ReadMessage()
 		commChan <- goCommChan{p, err}
+
+		if err == nil && c.logger != nil {
+			c.logger.Debug(c.url, zap.String("read", string(p)))
+		}
 	}()
 
 	select {
