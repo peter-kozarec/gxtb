@@ -72,6 +72,9 @@ func (c *StreamClient) Disconnect() error {
 		c.listenCtxCancel()
 	}
 
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	return c.disconnect()
 }
 
