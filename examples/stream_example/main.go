@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
-	
+
 	"github.com/peter-kozarec/gxtb"
 )
 
@@ -62,5 +62,5 @@ func main() {
 		log.Fatalf("unexpected: %v", err)
 	}
 
-	log.Print("Gracefull exit")
+	log.Print("Graceful exit")
 }

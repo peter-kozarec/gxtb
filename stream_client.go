@@ -331,7 +331,7 @@ func (c *StreamClient) handleMessage(msg []byte) error {
 	case "tradeStatus":
 		return c.handleTradeStatus(s)
 	default:
-		return fmt.Errorf("invalid command recieved %s in %s", s.Command, msg)
+		return fmt.Errorf("invalid command received %s in %s", s.Command, msg)
 	}
 }
 

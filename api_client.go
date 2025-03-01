@@ -73,7 +73,7 @@ func (c *ApiClient) Login(ctx context.Context, userId, password, appName string)
 		return "", fmt.Errorf("unable to process login api call: %w", err)
 	}
 
-	// Important to defer logout wich cancel's this goroutine
+	// Important to defer logout which cancel's this goroutine
 	// ToDo: Not good refector later
 	ctx, c.keepAliveCncl = context.WithCancel(context.Background())
 
