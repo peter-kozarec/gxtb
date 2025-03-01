@@ -1,5 +1,7 @@
 # gxtb
 
+[![Go](https://github.com/peter-kozarec/gxtb/actions/workflows/go.yml/badge.svg)](https://github.com/peter-kozarec/gxtb/actions/workflows/go.yml)
+
 `gxtb` is a Go package that provides API and streaming clients for interacting with the XTB trading platform.
 
 ## Installation
